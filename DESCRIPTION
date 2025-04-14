@@ -1,0 +1,20 @@
+Package: AirEcuador
+Type: Package
+Title: Extracción y Análisis de Datos Ambientales de Quito
+Version: 0.1.0
+Authors@R: person("Fidel", "Vallejo", email = "fidel.vallejo@unach.edu.ec", role = c("aut", "cre"))
+Description: Este paquete proporciona herramientas para descargar, extraer y analizar datos ambientales de Quito, como concentraciones de contaminantes (PM2.5, CO, NO2, etc.), a partir de los datos abiertos de la Secretaría de Ambiente de Quito.
+License: MIT
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    httr,
+    lhmetools,
+    openxlsx,
+    dplyr,
+    lubridate
+Suggests:
+    openair,
+    ggplot2,
+    tidyr
