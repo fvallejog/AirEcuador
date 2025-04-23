@@ -1,7 +1,7 @@
-AirEcuador
+# AirEcuador
 Este paquete proporciona herramientas para descargar, extraer y analizar datos ambientales de Quito, como concentraciones de contaminantes (PM2.5, CO, NO2, etc.), a partir de los datos abiertos de la Secretaría de Ambiente de Quito.
 
-Instalación
+# Instalación
 Puedes instalar AirEcuador desde GitHub usando devtools:
 
 # Instalar devtools si no lo tienes
@@ -13,24 +13,22 @@ devtools::install_github("fvallejog/AirEcuador")
 # Cargar el paquete
 library(AirEcuador)
 
-Uso Básico
-Extraer datos por estación
+## Uso Básico
+# Extraer datos por estación
 
 datos <- extraer_Quito_estacion(estacion = "Los_Chillos", fecha_inicio = "2024-01-01", fecha_fin = "2024-06-30")
 head(datos)
 
-Extraer datos por contaminante
+# Extraer datos por contaminante
 datos_co <- extraer_Quito_variable(contaminante = "CO", year = 2024)
 head(datos_co)
 
-Visualizar las estaciones en un mapa
+# Visualizar las estaciones en un mapa
 mapa_estaciones()
 
-Ejemplos Avanzados con openair y ggplot2
+## Ejemplos Avanzados con openair y ggplot2
 
-1. Resumen de contaminantes con openair
-
-Usa openair para generar un resumen estadístico de los contaminantes en una estación específica:
+1. Resumen de contaminantes con openair: Usa openair para generar un resumen estadístico de los contaminantes en una estación específica:
 
 library(openair)
 
@@ -43,9 +41,7 @@ datos <- dplyr::rename(datos, date = date)
 # Generar un resumen de estadísticas para todos los contaminantes
 summaryPlot(datos, pollutant = c("CO", "PM2.5", "NO2"))
 
-2. Rosa de contaminación con openair
-
-Analiza la dirección del viento y su relación con los niveles de CO usando una rosa de contaminación:
+2. Rosa de contaminación con openair: Analiza la dirección del viento y su relación con los niveles de CO usando una rosa de contaminación:
 
 library(openair)
 
@@ -61,9 +57,7 @@ datos <- dplyr::inner_join(datos_co, datos_dir, by = "date") %>%
 # Crear una rosa de contaminación
 pollutionRose(datos, pollutant = "CO", ws = "ws", main = "Rosa de Contaminación CO en Los Chillos (2024)")
 
-3. Serie temporal con ggplot2
-
-Visualiza la serie temporal de CO para múltiples estaciones usando ggplot2:
+3. Serie temporal con ggplot2: Visualiza la serie temporal de CO para múltiples estaciones usando ggplot2:
 
 library(ggplot2)
 library(dplyr)
