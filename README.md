@@ -6,8 +6,10 @@ Puedes instalar AirEcuador desde GitHub usando devtools:
 
 Instalar devtools si no lo tienes
 if (!require(devtools)) install.packages("devtools")
+
 Instalar AirEcuador
 devtools::install_github("fvallejog/AirEcuador")
+
 Cargar el paquete
 library(AirEcuador)
 
@@ -15,13 +17,16 @@ library(AirEcuador)
 # Extraer datos por estación
 
 datos <- extraer_Quito_estacion(estacion = "Los_Chillos", fecha_inicio = "2024-01-01", fecha_fin = "2024-06-30")
+
 head(datos)
 
 # Extraer datos por contaminante
 datos_co <- extraer_Quito_variable(contaminante = "CO", year = 2024)
+
 head(datos_co)
 
 # Visualizar las estaciones en un mapa
+
 mapa_estaciones()
 
 ## Ejemplos Avanzados con openair y ggplot2
@@ -45,6 +50,7 @@ library(openair)
 
 # Extraer datos de CO y dirección del viento (DIR)
 datos_co <- extraer_Quito_variable(contaminante = "CO", year = 2024)
+
 datos_dir <- extraer_Quito_variable(contaminante = "DIR", year = 2024)
 
 # Combinar los datos
