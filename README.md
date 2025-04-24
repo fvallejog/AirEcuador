@@ -4,13 +4,11 @@ Este paquete proporciona herramientas para descargar, extraer y analizar datos a
 # Instalación
 Puedes instalar AirEcuador desde GitHub usando devtools:
 
-# Instalar devtools si no lo tienes
+Instalar devtools si no lo tienes
 if (!require(devtools)) install.packages("devtools")
-
-# Instalar AirEcuador
+Instalar AirEcuador
 devtools::install_github("fvallejog/AirEcuador")
-
-# Cargar el paquete
+Cargar el paquete
 library(AirEcuador)
 
 ## Uso Básico
