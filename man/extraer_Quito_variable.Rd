@@ -38,7 +38,8 @@ and convert the resulting instants to UTC for comparison with WRF.}
 A data frame with a \code{POSIXct} \code{date} column and one numeric column per
 station. An empty data frame is returned with an informative message if
 the remote resource is unavailable or its format cannot be processed.
-Original units are retained in the \code{unidades} attribute. No concentration
+Original units, when supplied in a separate header row, are retained in
+the \code{unidades} attribute; otherwise \code{NA} is recorded. No concentration
 unit conversion is performed.
 }
 \description{

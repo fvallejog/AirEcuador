@@ -17,6 +17,10 @@
   including when blank columns are present. Accented station names are
   accepted. All hours of the final date are retained. Signed temperatures
   are preserved. Unexpected duplicate timestamps are reported.
+* Quito spreadsheets with one station-header row or with an additional unit
+  row are supported. Excel date cells, ISO date strings and numeric Excel
+  serials are recognised. The first observation is retained when a unit row
+  is absent; unreported units are represented by NA.
 * Time-zone interpretation is exposed through `tz`. The Quito default of UTC
   is retained to reproduce legacy numeric timestamps. This is a wall-clock
   interpretation, not a conversion from Ecuadorian local time. Explicit

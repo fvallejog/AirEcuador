@@ -72,3 +72,40 @@ test_that("archive extraction and Excel reading work together and clean up", {
                c("00:00", "23:00"))
   expect_false(dir.exists(temporal))
 })
+
+test_that("ISO dates and a single station header retain the first observation", {
+  periodo <- .periodo("2024-01-01", "2024-01-01", NULL, 2004L)
+  crudos <- data.frame(V1 = c("FECHA", "2024-01-01 00:00:00",
+                               "2024-01-01 23:00:00", "2024-01-02 00:00:00"),
+                        V2 = c("BELISARIO", "2", "4", "99"))
+  x <- .procesar_quito(crudos, periodo, NULL, "CO", "America/Guayaquil")
+  expect_equal(x$Belisario, c(2, 4))
+  expect_equal(format(x$date, "%H:%M", tz = "America/Guayaquil"),
+               c("00:00", "23:00"))
+  expect_equal(attr(x, "unidades"), c(Belisario = NA_character_))
+})
+
+test_that("Excel date cells and absent unit rows are supported end to end", {
+  fixture <- test_path("fixtures", "quito-date-cells.zip")
+  local_mocked_bindings(.descargar = function(url, destino, query = NULL) {
+    file.copy(fixture, destino, overwrite = TRUE)
+  })
+  x <- extraer_Quito_variable("CO", "2024-01-01", "2024-01-01",
+                               percentil_limite = NULL,
+                               tz = "America/Guayaquil")
+  expect_equal(nrow(x), 2L)
+  expect_equal(x$Belisario, c(2, 4))
+  expect_equal(format(x$date, "%H:%M", tz = "America/Guayaquil"),
+               c("00:00", "23:00"))
+  expect_true(all(is.na(attr(x, "unidades"))))
+})
+
+test_that("mixed serial and ISO dates are interpreted as source wall clocks", {
+  x <- .fechas_quito(c("45292", "2024-01-01T23:00:00", "2024-01-01",
+                        "2024-01-01 12:30", "2024-02-30 00:00:00", "units"),
+                     "America/Guayaquil")
+  expect_equal(format(x[1:4], "%Y-%m-%d %H:%M", tz = "America/Guayaquil"),
+               c("2024-01-01 00:00", "2024-01-01 23:00",
+                 "2024-01-01 00:00", "2024-01-01 12:30"))
+  expect_true(all(is.na(x[5:6])))
+})

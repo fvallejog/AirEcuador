@@ -22,7 +22,8 @@
 #' @return A data frame with a `POSIXct` `date` column and one numeric column per
 #'   station. An empty data frame is returned with an informative message if
 #'   the remote resource is unavailable or its format cannot be processed.
-#'   Original units are retained in the `unidades` attribute. No concentration
+#'   Original units, when supplied in a separate header row, are retained in
+#'   the `unidades` attribute; otherwise `NA` is recorded. No concentration
 #'   unit conversion is performed.
 #' @details All hours of `fecha_fin` are included. Negative pollutant values
 #'   and negative values of nonnegative meteorological variables are replaced

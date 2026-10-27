@@ -13,12 +13,12 @@ Before submission:
 
 1. Results for Linux release, R-devel, Windows release and macOS release must
    be reviewed in GitHub Actions.
-2. Quito extraction must be verified against at least one current official
-   RAR archive. The official source returned HTTP 403 from the development
-   environment and from a GitHub-hosted runner on 2026-10-27; synthetic
-   regression tests alone do not establish current source compatibility.
-   An official RAR downloaded through a working connection can be supplied
-   for this verification.
+2. Quito extraction was verified against the official CO.rar supplied by the
+   maintainer on 2026-10-27. The one-row header and Excel date-cell layout are
+   now supported, with 24 hourly rows and eight station columns recovered for
+   2024-01-01. Direct HTTP access returned 403 from this environment and a
+   GitHub-hosted runner. Download access from the maintainer's R session
+   remains to be confirmed; browser access alone does not prove that request.
 3. Cuenca source coverage must be understood as the UDA station published by
    IERSE. Its gas units and the local-time assumption must be retained in any
    scientific analysis. EMOV network coverage must not be claimed.
@@ -30,9 +30,9 @@ The reviewed tarball is submitted at <https://CRAN.R-project.org/submit.html>.
 The maintainer confirmation email must then be accepted before processing.
 Acceptance is determined by the CRAN maintainers.
 
-A source tarball has been built with current R 4.6.1. Package checks on
-current R release completed with Status: OK on Linux, Windows and macOS.
-The separate real-source Quito verification remains blocked by HTTP 403,
-and R-devel results were pending when this status was recorded.
+A source tarball was built with current R 4.6.1. Package checks on current R
+release completed with Status: OK on Linux, Windows and macOS before the
+official archive format adjustment. The corrected candidate must be rebuilt
+and rechecked. R-devel results were pending when this status was recorded.
 No tarball should be presented as a completed CRAN submission until the
 submission and maintainer-confirmation steps have actually been completed.

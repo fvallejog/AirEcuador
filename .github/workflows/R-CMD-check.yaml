@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
@@ -42,5 +46,5 @@ jobs:
           error-on: '"warning"'
           upload-snapshots: false
       - name: Validate current Quito archive
-        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release' && github.event_name == 'push'
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release' && github.event_name == 'workflow_dispatch'
         run: Rscript -e 'pkgload::load_all(); source("dev/validate-quito-live.R")'

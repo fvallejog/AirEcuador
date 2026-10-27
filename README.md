@@ -107,7 +107,10 @@ should be supplied explicitly; UTC instants can then be displayed as follows:
 format(co$date, tz = "UTC", usetz = TRUE)
 ```
 
-Units are retained in `attr(x, "unidades")`. They are not harmonized between
+Units, when reported in a separate header row, are retained in
+`attr(x, "unidades")` for Quito. When no unit row is supplied, `NA` is recorded;
+units are not inferred from concentrations. Cuenca units are retrieved from
+the provider's measurement metadata. Units are not harmonized between
 cities. In particular, Cuenca gas measurements must not be treated as mass
 concentrations when ppm or ppb have been reported. No mass-to-volume or
 temperature/pressure conversion is performed by the package.
