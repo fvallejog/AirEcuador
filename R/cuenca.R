@@ -245,7 +245,8 @@ extraer_Cuenca_estacion <- function(
   media <- function(x) if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
   minutos <- data.frame(tiempo = as.numeric(names(grupos)),
                          valor = vapply(grupos, media, numeric(1)))
-  horas <- floor(minutos$tiempo / 3600) * 3600
+  origen <- as.numeric(limites[1L])
+  horas <- floor((minutos$tiempo - origen) / 3600) * 3600 + origen
   grupos <- split(minutos$valor, horas)
   n <- vapply(grupos, function(x) sum(!is.na(x)), integer(1))
   medias <- vapply(grupos, media, numeric(1))

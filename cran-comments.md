@@ -9,6 +9,9 @@ Validation completed on 2026-10-27:
 
 * 71 offline test expectations passed without failures, warnings or skips on
   Ubuntu 24.04 with R 4.3.3.
+* R CMD check --as-cran --no-manual completed with 0 errors, 0 warnings and
+  3 notes: new submission / Quito source URL HTTP 403; optional leaflet not
+  installed locally; current time could not be verified from this environment.
 * Live Cuenca checks for CO, NO2, O3, PM2.5 and SO2 returned 24 valid hourly
   means each for 2025-01-01. Original units were retrieved: ppm for the gases
   and ug/m3 for PM2.5.
