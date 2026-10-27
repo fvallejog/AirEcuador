@@ -1,21 +1,29 @@
 Package: AirEcuador
 Type: Package
-Title: Extracción y Análisis de Datos Ambientales de Quito
-Version: 0.2.0
+Title: Import Air Quality and Meteorological Data from Ecuador
+Version: 0.3.0
 Authors@R: person("Fidel", "Vallejo", email = "fidel.vallejo@unach.edu.ec", role = c("aut", "cre"))
-Description: Este paquete proporciona herramientas para descargar, extraer y analizar datos ambientales de Quito, como concentraciones de contaminantes (PM2.5, CO, NO2, etc.), a partir de los datos abiertos de la Secretaría de Ambiente de Quito.
-License: MIT
+Description: Air quality and meteorological observations from Quito's
+    Environment Secretariat <https://datosambiente.quito.gob.ec/> and air
+    pollutant observations from the Universidad del Azuay station in Cuenca,
+    published by IERSE <https://ierse.uazuay.edu.ec/aire/>, are downloaded and
+    imported. Station names, missing values, date intervals and optional
+    percentile filters are handled consistently. Minute observations from
+    Cuenca can be aggregated to hourly means with an explicit completeness
+    requirement. Quito monitoring stations can be displayed on an interactive
+    map.
+License: MIT + file LICENSE
 Encoding: UTF-8
+URL: https://github.com/fvallejog/AirEcuador
+BugReports: https://github.com/fvallejog/AirEcuador/issues
+Depends: R (>= 4.0.0)
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.1
 Imports:
+    archive,
     httr,
-    lhmetools,
-    openxlsx,
-    dplyr,
-    lubridate, 
-    leaflet    
+    readxl
 Suggests:
-    openair,
-    ggplot2,
-    tidyr
+    leaflet,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
