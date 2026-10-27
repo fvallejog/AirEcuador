@@ -41,3 +41,6 @@ jobs:
           args: 'c("--no-manual", "--as-cran")'
           error-on: '"warning"'
           upload-snapshots: false
+      - name: Validate current Quito archive
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release' && github.event_name == 'push'
+        run: Rscript -e 'pkgload::load_all(); source("dev/validate-quito-live.R")'
