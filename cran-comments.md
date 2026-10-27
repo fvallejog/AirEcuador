@@ -19,10 +19,23 @@ Validation completed on 2026-10-27:
   archive endpoint returned HTTP 403. An end-to-end synthetic archive and
   spreadsheet test passed. Confirmation against a current official Quito
   archive is still required before submission.
+* The same HTTP 403 was reproduced by the separate live Quito check on a
+  GitHub-hosted Ubuntu runner. This failure was observed after the package
+  check itself completed with Status: OK.
+* R CMD check --as-cran --no-manual completed with Status: OK on GitHub-hosted
+  Linux, Windows and macOS using current R release (4.6.1). The R-devel jobs
+  were still installing dependencies when this status was recorded.
+* A development source tarball was also built locally with R 4.6.1. The local
+  offline tests above were run with R 4.3.3; no local R 4.6.1 test pass is
+  claimed because the older native dependency builds were incompatible.
+* Additional live Cuenca spot checks returned minute observations for
+  2026-10-01. No observations were returned for the tested intervals on
+  2014-01-01 and 2024-06-01. This does not establish the earliest available
+  record, and full EMOV historical coverage is not claimed.
 
 Checks on current R release, R-devel, Windows and macOS are configured in
-.github/workflows/R-CMD-check.yaml. Their results must be reviewed before the
-submission comments are finalized. No cross-platform pass is claimed here.
+.github/workflows/R-CMD-check.yaml. Final R-devel results must be reviewed
+before the submission comments are finalized.
 
 External data are accessed only at explicit user request. Examples are guarded
 by interactive(), and tests do not access the network. Temporary downloads
