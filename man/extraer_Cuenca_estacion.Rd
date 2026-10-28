@@ -9,7 +9,7 @@ extraer_Cuenca_estacion(
   fecha_inicio = format(.ultimo_mes(), "\%Y-\%m-01"),
   fecha_fin = .ultimo_mes(),
   year = NULL,
-  percentil_limite = NULL,
+  percentil_limite = 0.999,
   resolucion = c("horaria", "original"),
   cobertura_minima = 0.75,
   tz = "America/Guayaquil"
@@ -24,9 +24,11 @@ provider and is not guaranteed for any particular year.}
 
 \item{year}{An optional integer year by which both dates are overridden.}
 
-\item{percentil_limite}{An optional percentile in \verb{(0, 1]}. No upper
-percentile filter is applied by default. When supplied, filtering is
-applied to the returned resolution, after aggregation.}
+\item{percentil_limite}{An optional percentile in \code{(0, 1]}, default \code{0.999}
+  (P99.9). For each station and pollutant the type-7 sample quantile is
+  calculated once over the requested interval, after physical checks and
+  any hourly aggregation, at the returned resolution. Values strictly
+  above it become \code{NA}. \code{NULL} disables only the percentile filter.}
 
 \item{resolucion}{Either \code{"horaria"} (hourly means) or \code{"original"} (the
 timestamps and resolution supplied by the provider).}
@@ -43,9 +45,11 @@ This assumption should be verified with the provider for critical uses.}
 }
 \value{
 A data frame with \code{date}, \code{estacion} and available pollutant
-columns. Original units and hourly valid-minute counts are retained in
-the \code{unidades} and \code{cobertura} attributes, respectively. An empty data frame
-is returned with a message if no observations are available.
+  columns. Original units and hourly valid-minute counts are retained in
+  the \code{unidades} and \code{cobertura} attributes, respectively. An empty data frame
+  is returned with a message if no observations are available.
+  \code{attr(x, "control_calidad")} combines the filtering summaries for each
+  returned pollutant, with separate original-observation and output stages.
 }
 \description{
 Concentrations of CO, NO2, O3, PM2.5 and SO2 are downloaded separately and

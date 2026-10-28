@@ -59,13 +59,19 @@
   salida <- data.frame(date = fechas[conservar])
   if (!nrow(salida)) return(.vacio_variable(tz))
   if (anyDuplicated(salida$date)) stop("Duplicate observation times were found.")
+  controles <- vector("list", length(columnas))
   for (i in seq_along(columnas)) {
-    salida[[estaciones[i]]] <- .filtrar_valores(
-      datos[[columnas[i]]][conservar], percentil, variable == "TMP")
+    depurado <- .depurar_valores(datos[[columnas[i]]][conservar], percentil,
+                                 variable, unidades[i])
+    salida[[estaciones[i]]] <- depurado$valores
+    controles[[i]] <- cbind(
+      estacion = estaciones[i], variable = variable, etapa = "salida",
+      resolucion = "horaria", unidad = unidades[i], depurado$control)
   }
   salida <- salida[order(salida$date), , drop = FALSE]
   rownames(salida) <- NULL
   attr(salida, "unidades") <- stats::setNames(unidades, estaciones)
+  attr(salida, "control_calidad") <- do.call(rbind, controles)
   attr(salida, "fuente") <- "Secretaria de Ambiente de Quito"
   salida
 }

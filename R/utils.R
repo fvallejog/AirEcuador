@@ -99,15 +99,76 @@
     as.POSIXct(paste(periodo$fin + 1L, "00:00:00"), tz = tz))
 }
 
-.filtrar_valores <- function(x, percentil, permitir_negativos = FALSE) {
-  x <- suppressWarnings(as.numeric(x))
-  x[!is.finite(x)] <- NA_real_
-  if (!permitir_negativos) x[!is.na(x) & x < 0] <- NA_real_
-  if (!is.null(percentil) && any(!is.na(x))) {
-    limite <- stats::quantile(x, percentil, na.rm = TRUE, names = FALSE)
-    x[!is.na(x) & x > limite] <- NA_real_
+.limites_fisicos <- function(variable = NULL, unidad = NA_character_,
+                            permitir_negativos = FALSE) {
+  inferior <- if (permitir_negativos || identical(variable, "TMP")) -Inf else 0
+  superior <- Inf
+  abierto <- identical(variable, "PRE")
+  unidad_texto <- if (length(unidad) == 1L && !is.na(unidad)) trimws(unidad) else ""
+  clave <- .clave(unidad_texto)
+  if (identical(variable, "TMP")) {
+    if (clave %in% c("C", "DEGC", "CELSIUS", "GRADOSC", "GRADOSCELSIUS")) {
+      inferior <- -273.15
+    } else if (clave %in% c("K", "KELVIN")) {
+      inferior <- 0
+    } else if (clave %in% c("F", "DEGF", "FAHRENHEIT", "GRADOSF")) {
+      inferior <- -459.67
+    }
+  } else if (identical(variable, "HUM")) {
+    if (unidad_texto == "%" || clave %in% c("PCT", "PERCENT", "PORCENTAJE")) {
+      superior <- 100
+    } else if (clave %in% c("1", "FRACTION", "FRACCION")) {
+      superior <- 1
+    }
+  } else if (identical(variable, "DIR")) {
+    if (unidad_texto %in% c("\u00b0", "\u00ba") ||
+        clave %in% c("DEG", "DEGREES", "DEGREE", "GRADOS")) {
+      superior <- 360
+    } else if (clave %in% c("RAD", "RADIAN", "RADIANS", "RADIANES")) {
+      superior <- 2 * pi
+    }
+  } else if (!is.null(variable) && variable %in% .variables_cuenca) {
+    if (clave %in% c("PPM", "PPMV")) superior <- 1e6
+    if (clave %in% c("PPB", "PPBV")) superior <- 1e9
   }
-  x
+  list(inferior = inferior, superior = superior, inferior_abierto = abierto)
+}
+
+.depurar_valores <- function(x, percentil, variable = NULL,
+                            unidad = NA_character_, permitir_negativos = FALSE) {
+  original <- x
+  x <- suppressWarnings(as.numeric(x))
+  faltantes <- sum(is.na(original) & !is.nan(original))
+  no_numericos <- sum(!is.na(original) & is.na(x) & !is.nan(x))
+  no_finitos <- sum(is.infinite(x) | is.nan(x))
+  x[!is.finite(x)] <- NA_real_
+  limites <- .limites_fisicos(variable, unidad, permitir_negativos)
+  imposibles <- !is.na(x) & (x < limites$inferior | x > limites$superior |
+                              (limites$inferior_abierto & x == limites$inferior))
+  x[imposibles] <- NA_real_
+  umbral <- NA_real_
+  extremos <- rep(FALSE, length(x))
+  if (!is.null(percentil) && any(!is.na(x))) {
+    umbral <- stats::quantile(x, percentil, na.rm = TRUE, names = FALSE, type = 7)
+    extremos <- !is.na(x) & x > umbral
+    x[extremos] <- NA_real_
+  }
+  control <- data.frame(
+    n_entrada = length(x), n_faltantes_entrada = faltantes,
+    n_no_numericos = no_numericos, n_no_finitos = no_finitos,
+    limite_fisico_inferior = limites$inferior,
+    limite_fisico_superior = limites$superior,
+    inferior_abierto = limites$inferior_abierto,
+    n_imposibles = sum(imposibles),
+    percentil = if (is.null(percentil)) NA_real_ else percentil,
+    umbral_percentil = umbral, n_percentil = sum(extremos),
+    n_validos = sum(!is.na(x)))
+  list(valores = x, control = control)
+}
+
+.filtrar_valores <- function(x, percentil, permitir_negativos = FALSE,
+                            variable = NULL, unidad = NA_character_) {
+  .depurar_valores(x, percentil, variable, unidad, permitir_negativos)$valores
 }
 
 .descargar <- function(url, destino, query = NULL) {

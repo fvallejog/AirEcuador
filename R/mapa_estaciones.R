@@ -7,20 +7,24 @@
 #' @param ciudad A single city name: `"Quito"` (the default) or `"Cuenca"`.
 #'   Case and surrounding whitespace are ignored.
 #' @details The nine Quito locations are retained from AirEcuador 0.2.0.
-#'   Cuenca shows three EMOV-CAIRE sites: Centro Historico (MUN), Sector
-#'   Parque Industrial (CCA) and Sector Control Sur (EIE). Their reference
+#'   Cuenca shows the IERSE/UDA station and three EMOV-CAIRE sites: Centro
+#'   Historico (MUN), Sector Parque Industrial (CCA) and Sector Control Sur
+#'   (EIE). The EMOV reference
 #'   coordinates are attributed to EMOV (2013) in Table I of Abad and
 #'   Mejia (2017); verification of their locations for 2024--2025 is pending.
-#'   The source and coordinate date are displayed in each Cuenca popup.
+#'   UDA's reference location is taken from the IERSE air-quality page's
+#'   geographic metadata; the precise instrument position is not verified.
+#'   Sources and location limitations are displayed in the Cuenca popups.
 #'
 #'   A mapped site does not imply a supported data download. EMOV downloads
 #'   have not been implemented: [extraer_Cuenca_variable()] and
-#'   [extraer_Cuenca_estacion()] still query the separate UDA station.
+#'   [extraer_Cuenca_estacion()] query the separate UDA station.
 #'   Current station operation is not verified by this function.
 #' @references Abad, L. and Mejia, D. (2017). Estimacion de la concentracion
 #'   de material particulado menor a 10 micras a traves de sensores remotos
 #'   en el area urbana de la ciudad de Cuenca, Table I.
 #'   <https://www.researchgate.net/publication/336209902>.
+#'   IERSE/UDA air-quality portal: <https://ierse.uazuay.edu.ec/aire/>.
 #' @return A `leaflet` HTML widget. Map tiles are downloaded by the browser
 #'   when the widget is displayed.
 #' @examples
@@ -45,6 +49,15 @@ mapa_estaciones <- function(ciudad = "Quito") {
            "<br><a href=\"", estaciones$fuente_coordenadas,
            "\" target=\"_blank\" rel=\"noopener noreferrer\">",
            "Fuente de coordenadas (Tabla I)</a>"))
+  es_uda <- estaciones$codigo == "UDA"
+  if (any(es_uda)) {
+    nota[es_uda] <- paste0(
+      "Ubicacion de referencia: metadatos geograficos del portal IERSE.",
+      "<br>Posicion exacta del instrumento sin verificar.",
+      "<br>Descarga implementada mediante las funciones Cuenca (UDA).",
+      "<br><a href=\"", estaciones$fuente_coordenadas[es_uda],
+      "\" target=\"_blank\" rel=\"noopener noreferrer\">Portal IERSE/UDA</a>")
+  }
   mapa <- leaflet::leaflet(data = estaciones)
   mapa <- leaflet::addProviderTiles(mapa, "OpenTopoMap")
   mapa <- leaflet::addCircleMarkers(
@@ -55,7 +68,7 @@ mapa_estaciones <- function(ciudad = "Quito") {
     label = estaciones$nombre,
     labelOptions = leaflet::labelOptions(permanent = FALSE, textsize = "12px",
                                          direction = "auto"),
-    color = if (estaciones$ciudad[1L] == "Quito") "green" else "#b35c00",
+    color = ifelse(estaciones$descarga_implementada, "green", "#b35c00"),
     radius = 8, stroke = TRUE, fillOpacity = 0.8)
   if (estaciones$ciudad[1L] == "Quito") {
     return(leaflet::setView(mapa, lng = -78.5, lat = -0.2, zoom = 11))
@@ -79,6 +92,7 @@ mapa_estaciones <- function(ciudad = "Quito") {
     latitud = c(-0.184719, -0.095472, -0.221393, -0.107777, -0.250000,
                  -0.333949, -0.297062, -0.214933, -0.009222),
     anio_coordenadas = NA_integer_, fuente_coordenadas = NA_character_,
+    descarga_implementada = TRUE,
     stringsAsFactors = FALSE
   )
   cuenca <- data.frame(
@@ -94,8 +108,16 @@ mapa_estaciones <- function(ciudad = "Quito") {
       "EJE_07-07_Estimacion_de_la_concentracion_de_material_particulado_",
       "menor_a_10_micras_a_traves_de_sensores_remotos_en_el_area_urbana_",
       "de_la_ciudad_de_Cuenca"),
+    descarga_implementada = FALSE,
     stringsAsFactors = FALSE)
-  rbind(quito, cuenca)
+  uda <- data.frame(
+    ciudad = "Cuenca", red = "IERSE - Universidad del Azuay",
+    codigo = "UDA", nombre = "Universidad del Azuay",
+    longitud = -79.0005447, latitud = -2.9190715,
+    anio_coordenadas = NA_integer_,
+    fuente_coordenadas = "https://ierse.uazuay.edu.ec/aire/",
+    descarga_implementada = TRUE, stringsAsFactors = FALSE)
+  rbind(quito, cuenca, uda)
 }
 
 .estaciones_mapa <- function(ciudad = "Quito") {

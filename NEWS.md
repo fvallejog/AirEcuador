@@ -1,8 +1,19 @@
 # AirEcuador 0.3.0.9000
 
+* All four extractors apply `percentil_limite = 0.999` by default, independently
+  per station and variable, after physical checks. Cuenca's previous NULL
+  default is changed to the maintainer's P99.9 policy. Only values strictly
+  above the type-7 sample quantile of the requested output interval are
+  replaced by NA; rows and timestamps are preserved.
+* Unit-aware physical/measurement-domain checks are applied before percentile
+  estimation. Cuenca original observations are checked before aggregation
+  and hourly completeness counting. Per-series bounds, exclusion counts and
+  percentile thresholds are exposed in the `control_calidad` attribute.
 * `mapa_estaciones(ciudad = "Quito")` retains the existing default map and
-  accepts `ciudad = "Cuenca"` for the three EMOV-CAIRE reference sites MUN,
-  CCA and EIE. Historical coordinate sources and pending 2024--2025 location
+  accepts `ciudad = "Cuenca"` for UDA and the three EMOV-CAIRE reference sites
+  MUN, CCA and EIE. Providers and downloader status are identified. UDA's
+  reference location is taken from IERSE page metadata. Historical EMOV
+  coordinate sources and pending 2024--2025 location
   verification are identified in Cuenca popups. EMOV data downloads remain
   unimplemented; the Cuenca extraction functions still query UDA.
 * The initial CRAN upload remains unconfirmed and is on hold at the

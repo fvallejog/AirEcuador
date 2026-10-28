@@ -1,7 +1,8 @@
 # Cuenca scope for maintainer review
 
-The requested coverage is the EMOV-CAIRE network, specifically these three
-sites. It must not be represented by the IERSE/UDA downloader.
+The requested EMOV-CAIRE coverage comprises the three sites below. At the
+maintainer's request, UDA is retained as a fourth, separately identified
+IERSE station. The UDA downloader does not implement the EMOV stations.
 
 | Code | Site | Documented reference latitude | Documented reference longitude |
 | --- | --- | --- | --- |
@@ -19,6 +20,13 @@ area urbana de la ciudad de Cuenca":
 <https://www.researchgate.net/publication/336209902_EJE_07-07_Estimacion_de_la_concentracion_de_material_particulado_menor_a_10_micras_a_traves_de_sensores_remotos_en_el_area_urbana_de_la_ciudad_de_Cuenca>.
 Current locations for the requested 2024--2025 period have not been verified.
 The map identifies the coordinate source and this limitation in its popups.
+
+UDA is also mapped at latitude -2.9190715, longitude -79.0005447. These are
+the `place:location:latitude` and `place:location:longitude` values retrieved
+from <https://ierse.uazuay.edu.ec/aire/> on 2026-10-28. They identify a
+reference location published by the portal; the precise position of the
+instrument has not been verified. Its popup identifies IERSE/UDA and its
+existing downloader separately from EMOV.
 
 The provider's 2022 report, tables 2--4, distinguishes the automatic stations
 MUN, CCA and EIE from the microsensor network. Their records must not be

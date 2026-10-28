@@ -21,22 +21,26 @@ The optional package 'leaflet' is required for rendering.
 }
 \details{
 The nine Quito locations are retained from AirEcuador 0.2.0.
-Cuenca shows three EMOV-CAIRE sites: Centro Historico (MUN), Sector
-Parque Industrial (CCA) and Sector Control Sur (EIE). Their reference
-coordinates are attributed to EMOV (2013) in Table I of Abad and
-Mejia (2017); verification of their locations for 2024--2025 is pending.
-The source and coordinate date are displayed in each Cuenca popup.
+  Cuenca shows the IERSE/UDA station and three EMOV-CAIRE sites: Centro
+  Historico (MUN), Sector Parque Industrial (CCA) and Sector Control Sur
+  (EIE). The EMOV reference
+  coordinates are attributed to EMOV (2013) in Table I of Abad and
+  Mejia (2017); verification of their locations for 2024--2025 is pending.
+  UDA's reference location is taken from the IERSE air-quality page's
+  geographic metadata; the precise instrument position is not verified.
+  Sources and location limitations are displayed in the Cuenca popups.
 
-A mapped site does not imply a supported data download. EMOV downloads
-have not been implemented: \code{\link[=extraer_Cuenca_variable]{extraer_Cuenca_variable()}} and
-\code{\link[=extraer_Cuenca_estacion]{extraer_Cuenca_estacion()}} still query the separate UDA station.
-Current station operation is not verified by this function.
+  A mapped site does not imply a supported data download. EMOV downloads
+  have not been implemented: \code{\link[=extraer_Cuenca_variable]{extraer_Cuenca_variable()}} and
+  \code{\link[=extraer_Cuenca_estacion]{extraer_Cuenca_estacion()}} query the separate UDA station.
+  Current station operation is not verified by this function.
 }
 \references{
 Abad, L. and Mejia, D. (2017). Estimacion de la concentracion
 de material particulado menor a 10 micras a traves de sensores remotos
 en el area urbana de la ciudad de Cuenca, Table I.
 \url{https://www.researchgate.net/publication/336209902}.
+IERSE/UDA air-quality portal: \url{https://ierse.uazuay.edu.ec/aire/}.
 }
 \examples{
 if (requireNamespace("leaflet", quietly = TRUE)) {

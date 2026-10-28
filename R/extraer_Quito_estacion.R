@@ -10,10 +10,12 @@
 #' @return A data frame with `date`, `estacion` and available variable columns.
 #'   Original units are retained in the `unidades` attribute. An empty data
 #'   frame is returned with a message if no observations are available.
+#'   `attr(x, "control_calidad")` contains the filtering summary for the
+#'   requested station and each returned variable.
 #' @examples
 #' if (interactive()) {
 #'   datos <- extraer_Quito_estacion("Los Chillos", "2024-01-01", "2024-01-01",
-#'                                 percentil_limite = NULL,
+#'                                 percentil_limite = 0.999,
 #'                                 tz = "America/Guayaquil")
 #'   head(datos)
 #' }
@@ -26,7 +28,7 @@ extraer_Quito_estacion <- function(
   periodo <- .periodo(fecha_inicio, fecha_fin, year, 2004L)
   .validar_percentil(percentil_limite)
   .validar_tz(tz)
-  partes <- list()
+  partes <- controles <- list()
   unidades <- character()
   for (variable in .variables_quito) {
     datos <- .leer_quito(variable, periodo, percentil_limite, tz)
@@ -37,6 +39,10 @@ extraer_Quito_estacion <- function(
     partes[[variable]] <- parte
     unidad <- attr(datos, "unidades")[[estacion]]
     unidades[nombre] <- if (is.null(unidad)) NA_character_ else unidad
+    control <- attr(datos, "control_calidad")
+    if (!is.null(control)) {
+      controles[[variable]] <- control[control$estacion == estacion, , drop = FALSE]
+    }
   }
   if (!length(partes)) {
     message("No observations were available for ", estacion, ".")
@@ -47,6 +53,7 @@ extraer_Quito_estacion <- function(
   salida <- salida[c("date", "estacion", setdiff(names(salida),
                                                 c("date", "estacion")))]
   attr(salida, "unidades") <- unidades
+  attr(salida, "control_calidad") <- do.call(rbind, controles)
   attr(salida, "fuente") <- "Secretaria de Ambiente de Quito"
   salida
 }

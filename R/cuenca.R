@@ -11,9 +11,11 @@
 #'   month is requested by default. Data availability is determined by the
 #'   provider and is not guaranteed for any particular year.
 #' @param year An optional integer year by which both dates are overridden.
-#' @param percentil_limite An optional percentile in `(0, 1]`. No upper
-#'   percentile filter is applied by default. When supplied, filtering is
-#'   applied to the returned resolution, after aggregation.
+#' @param percentil_limite An optional percentile in `(0, 1]`, default `0.999`
+#'   (P99.9). For each station and pollutant the type-7 sample quantile is
+#'   calculated once over the requested interval, after physical checks and
+#'   any hourly aggregation, at the returned resolution. Values strictly
+#'   above it become `NA`. `NULL` disables only the percentile filter.
 #' @param resolucion Either `"horaria"` (hourly means) or `"original"` (the
 #'   timestamps and resolution supplied by the provider).
 #' @param cobertura_minima The minimum fraction of 60 distinct minutes with
@@ -28,13 +30,23 @@
 #'   retained in `attr(x, "unidades")`; no unit conversion is performed.
 #'   For hourly results, valid-minute counts are retained in
 #'   `attr(x, "cobertura")` with `date` and `UDA` columns. `NA` observations are
-#'   used for missing or insufficiently covered hours. An empty data frame is
+#'   used for missing or insufficiently covered hours.
+#'   `attr(x, "control_calidad")` records physical exclusions on original
+#'   observations (`etapa = "original"`) and percentile exclusions on the
+#'   output (`etapa = "salida"`); these stages must not be summed as if they
+#'   contained distinct observations. An empty data frame is
 #'   returned with a message when the service is unavailable, a request fails,
 #'   the response format changes or no records are found.
 #' @details Requests are divided into intervals of at most seven days.
 #'   Only concentration records are parsed; remotely supplied JavaScript is
-#'   never evaluated. Negative and nonfinite concentrations are replaced by
-#'   `NA`. Repeated, identical observations are deduplicated. Conflicting
+#'   never evaluated. Negative and nonfinite concentrations, and fractions
+#'   exceeding `1e6` ppm or `1e9` ppb when those units are reported, are replaced
+#'   by `NA` before hourly aggregation and valid-minute counting. No arbitrary
+#'   upper mass-concentration bound is inferred. The P99.9 screen is applied
+#'   to the returned resolution, once after all chunks have been combined.
+#'   Rows and timestamps are retained. A percentile screen is not a regulatory
+#'   limit or proof of measurement error. Repeated, identical observations
+#'   are deduplicated. Conflicting
 #'   observations at an identical timestamp are rejected.
 #' @examples
 #' if (interactive()) {
@@ -42,12 +54,13 @@
 #'   head(datos)
 #'   attr(datos, "unidades")
 #'   head(attr(datos, "cobertura"))
+#'   attr(datos, "control_calidad")
 #' }
 #' @export
 extraer_Cuenca_variable <- function(
     contaminante = "PM2.5",
     fecha_inicio = format(.ultimo_mes(), "%Y-%m-01"),
-    fecha_fin = .ultimo_mes(), year = NULL, percentil_limite = NULL,
+    fecha_fin = .ultimo_mes(), year = NULL, percentil_limite = 0.999,
     resolucion = c("horaria", "original"), cobertura_minima = 0.75,
     tz = "America/Guayaquil") {
   .validar_variable(contaminante, .variables_cuenca)
@@ -71,6 +84,8 @@ extraer_Cuenca_variable <- function(
 #'   columns. Original units and hourly valid-minute counts are retained in
 #'   the `unidades` and `cobertura` attributes, respectively. An empty data frame
 #'   is returned with a message if no observations are available.
+#'   `attr(x, "control_calidad")` combines the filtering summaries for each
+#'   returned pollutant, with separate original-observation and output stages.
 #' @examples
 #' if (interactive()) {
 #'   datos <- extraer_Cuenca_estacion(fecha_inicio = "2025-01-01",
@@ -80,7 +95,7 @@ extraer_Cuenca_variable <- function(
 #' @export
 extraer_Cuenca_estacion <- function(
     estacion = "UDA", fecha_inicio = format(.ultimo_mes(), "%Y-%m-01"),
-    fecha_fin = .ultimo_mes(), year = NULL, percentil_limite = NULL,
+    fecha_fin = .ultimo_mes(), year = NULL, percentil_limite = 0.999,
     resolucion = c("horaria", "original"), cobertura_minima = 0.75,
     tz = "America/Guayaquil") {
   if (!is.character(estacion) || length(estacion) != 1L || is.na(estacion) ||
@@ -93,7 +108,7 @@ extraer_Cuenca_estacion <- function(
   .validar_tz(tz)
   resolucion <- match.arg(resolucion)
   .validar_cobertura(cobertura_minima)
-  partes <- coberturas <- list()
+  partes <- coberturas <- controles <- list()
   unidades <- character()
   for (variable in .variables_cuenca) {
     datos <- .leer_cuenca(variable, periodo, percentil_limite, resolucion,
@@ -101,6 +116,7 @@ extraer_Cuenca_estacion <- function(
     if (!nrow(datos)) next
     nombre <- make.names(variable)
     unidades[nombre] <- attr(datos, "unidades")[["UDA"]]
+    controles[[variable]] <- attr(datos, "control_calidad")
     cobertura <- attr(datos, "cobertura")
     if (!is.null(cobertura)) {
       names(cobertura)[2L] <- nombre
@@ -119,6 +135,7 @@ extraer_Cuenca_estacion <- function(
   salida <- salida[c("date", "estacion", setdiff(names(salida),
                                                 c("date", "estacion")))]
   attr(salida, "unidades") <- unidades
+  attr(salida, "control_calidad") <- do.call(rbind, controles)
   attr(salida, "cobertura") <- if (length(coberturas)) {
     Reduce(combinar, coberturas)
   } else NULL
@@ -161,8 +178,10 @@ extraer_Cuenca_estacion <- function(
                            fechas_texto)) {
     stop("Invalid timestamps were received from the Cuenca service.")
   }
+  # Keep raw concentrations until units have been obtained. Physical checks
+  # are then applied before aggregation and their exclusions can be audited.
   salida <- unique(data.frame(date = fechas,
-                               valor = .filtrar_valores(valores_texto, NULL)))
+                               valor = suppressWarnings(as.numeric(valores_texto))))
   if (anyDuplicated(salida$date)) {
     stop("Conflicting Cuenca observations were received at the same time.")
   }
@@ -221,15 +240,23 @@ extraer_Cuenca_estacion <- function(
     datos <- datos[datos$date >= limites[1L] & datos$date < limites[2L], ,
                    drop = FALSE]
     if (!nrow(datos)) return(.vacio_variable(tz))
+    originales <- .depurar_valores(datos$valor, NULL, variable, unidad)
+    datos$valor <- originales$valores
     if (resolucion == "horaria") {
       salida <- .agregar_cuenca(datos, limites, cobertura, tz)
     } else {
       salida <- datos[order(datos$date), , drop = FALSE]
       names(salida)[2L] <- "UDA"
     }
-    salida$UDA <- .filtrar_valores(salida$UDA, percentil)
+    depurado <- .depurar_valores(salida$UDA, percentil, variable, unidad)
+    salida$UDA <- depurado$valores
     rownames(salida) <- NULL
     attr(salida, "unidades") <- c(UDA = unidad)
+    attr(salida, "control_calidad") <- rbind(
+      cbind(estacion = "UDA", variable = variable, etapa = "original",
+            resolucion = "original", unidad = unidad, originales$control),
+      cbind(estacion = "UDA", variable = variable, etapa = "salida",
+            resolucion = resolucion, unidad = unidad, depurado$control))
     attr(salida, "fuente") <- "IERSE - Universidad del Azuay, Cuenca"
     salida
   }, error = function(e) {

@@ -8,13 +8,18 @@ test_that("the default Quito catalogue is preserved and city matching is explici
   expect_true("SAN_ANTONIO" %in% quito$codigo)
 })
 
-test_that("Cuenca maps the three EMOV sites rather than substituting UDA", {
+test_that("Cuenca retains UDA alongside the three separately identified EMOV sites", {
   cuenca <- .estaciones_mapa("cuenca")
-  expect_setequal(cuenca$codigo, c("MUN", "CCA", "EIE"))
-  expect_equal(nrow(cuenca), 3L)
-  expect_true(all(cuenca$red == "EMOV - CAIRE"))
-  expect_false("UDA" %in% cuenca$codigo)
-  expect_true(all(cuenca$anio_coordenadas == 2013L))
+  expect_setequal(cuenca$codigo, c("MUN", "CCA", "EIE", "UDA"))
+  expect_equal(nrow(cuenca), 4L)
+  emov <- cuenca[cuenca$codigo != "UDA", ]
+  uda <- cuenca[cuenca$codigo == "UDA", ]
+  expect_true(all(emov$red == "EMOV - CAIRE"))
+  expect_true(all(emov$anio_coordenadas == 2013L))
+  expect_true(all(!emov$descarga_implementada))
+  expect_match(uda$red, "IERSE")
+  expect_true(uda$descarga_implementada)
+  expect_equal(uda$fuente_coordenadas, "https://ierse.uazuay.edu.ec/aire/")
   expect_true(all(nzchar(cuenca$fuente_coordenadas)))
   expect_true(all(cuenca$latitud > -3 & cuenca$latitud < -2.8))
   expect_true(all(cuenca$longitud > -79.1 & cuenca$longitud < -78.9))
