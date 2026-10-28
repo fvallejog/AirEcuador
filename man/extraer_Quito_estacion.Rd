@@ -2,43 +2,53 @@
 % Please edit documentation in R/extraer_Quito_estacion.R
 \name{extraer_Quito_estacion}
 \alias{extraer_Quito_estacion}
-\title{Extraer y procesar datos ambientales de Quito por estación}
+\title{Import Quito observations for one station}
 \usage{
 extraer_Quito_estacion(
   estacion = "Los Chillos",
   fecha_inicio = "2004-01-01",
-  fecha_fin = format(seq(Sys.Date(), by = "-1 month", length.out = 2)[2], "\%Y-\%m-\%d"),
+  fecha_fin = .ultimo_mes(),
   year = NULL,
-  percentil_limite = 0.999
+  percentil_limite = 0.999,
+  tz = "UTC"
 )
 }
 \arguments{
-\item{estacion}{Carácter, el nombre de la estación a extraer (e.g., "Los Chillos", "Guamani", "Tumbaco").}
+\item{estacion}{A Quito station name, for example \code{"Los Chillos"},
+\code{"Guamani"} or \code{"Belisario"}. Spaces, accents and underscores are accepted.}
 
-\item{fecha_inicio}{Fecha (formato "YYYY-MM-DD") desde la cual extraer datos (por defecto: "2004-01-01").}
+\item{fecha_inicio, fecha_fin}{Inclusive calendar dates, supplied as \code{Date}
+objects or \code{YYYY-MM-DD} strings. The last day of the preceding month is
+used when \code{fecha_fin} is omitted.}
 
-\item{fecha_fin}{Fecha (formato "YYYY-MM-DD") hasta la cual extraer datos (por defecto: último mes disponible).}
+\item{year}{An optional integer year. Both date arguments are overridden.}
 
-\item{year}{Numérico, año completo para el cual extraer datos (opcional). Si se especifica, sobrescribe fecha_inicio y fecha_fin.}
+\item{percentil_limite}{An optional percentile in \verb{(0, 1]}. Values above the
+station-specific sample quantile are replaced by \code{NA}. The legacy default
+of \code{0.999} is retained; \code{NULL} is recommended when pollution episodes are
+studied and no independently justified upper filter is available.}
 
-\item{percentil_limite}{Numérico, percentil para filtrar valores extremos (por defecto 0.999).}
+\item{tz}{A time zone used to interpret the source's Excel wall-clock times.
+The legacy default \code{"UTC"} retains the numeric timestamps produced by
+version 0.2.0; no conversion from Ecuadorian time was performed in that
+version. Use \code{"America/Guayaquil"} when Ecuadorian local times are intended,
+and convert the resulting instants to UTC for comparison with WRF.}
 }
 \value{
-Un data frame con las concentraciones de todos los contaminantes para la estación especificada,
-con columnas: date, estacion, y una columna por cada contaminante (CO, NO2, etc.).
+A data frame with \code{date}, \code{estacion} and available variable columns.
+Original units are retained in the \code{unidades} attribute. An empty data
+frame is returned with a message if no observations are available.
 }
 \description{
-Esta función descarga, descomprime y procesa datos ambientales de Quito
-(como PM2.5, CO, NO2, etc.) desde los datos abiertos de la Secretaría de
-Ambiente de Quito, para una estación específica y un rango de fechas.
+Available air quality and meteorological variables are combined by time.
+Individual unavailable variables are reported and omitted. No files are
+retained outside the R session's temporary directory.
 }
 \examples{
-\dontrun{
-# Extraer datos de todos los contaminantes para Los Chillos hasta febrero 2025
-datos <- extraer_Quito_estacion(estacion = "Los Chillos", fecha_fin = "2025-02-28")
-head(datos)
-# Extraer datos para un año completo
-datos <- extraer_Quito_estacion(estacion = "Los Chillos", year = 2024)
-head(datos)
+if (interactive()) {
+  datos <- extraer_Quito_estacion("Los Chillos", "2024-01-01", "2024-01-01",
+                                percentil_limite = NULL,
+                                tz = "America/Guayaquil")
+  head(datos)
 }
 }

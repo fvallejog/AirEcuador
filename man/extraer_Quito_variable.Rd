@@ -2,43 +2,61 @@
 % Please edit documentation in R/extraer_Quito_variable.R
 \name{extraer_Quito_variable}
 \alias{extraer_Quito_variable}
-\title{Extraer y procesar datos ambientales de Quito por contaminante o variable meteorológica}
+\title{Import Quito observations for one variable}
 \usage{
 extraer_Quito_variable(
   contaminante = "CO",
   fecha_inicio = "2004-01-01",
-  fecha_fin = format(seq(Sys.Date(), by = "-1 month", length.out = 2)[2], "\%Y-\%m-\%d"),
+  fecha_fin = .ultimo_mes(),
   year = NULL,
-  percentil_limite = 0.999
+  percentil_limite = 0.999,
+  tz = "UTC"
 )
 }
 \arguments{
-\item{contaminante}{Carácter, el contaminante a extraer (e.g., "CO", "PM2.5", "NO2").}
+\item{contaminante}{A variable code: \code{CO}, \code{NO2}, \code{O3}, \code{PM10}, \code{PM2.5},
+\code{SO2}, \code{LLU}, \code{DIR}, \code{HUM}, \code{IUV}, \code{PRE}, \code{RS}, \code{TMP} or \code{VEL}.}
 
-\item{fecha_inicio}{Fecha (formato "YYYY-MM-DD") desde la cual extraer datos (por defecto: "2004-01-01").}
+\item{fecha_inicio, fecha_fin}{Inclusive calendar dates, supplied as \code{Date}
+objects or \code{YYYY-MM-DD} strings. The last day of the preceding month is
+used when \code{fecha_fin} is omitted.}
 
-\item{fecha_fin}{Fecha (formato "YYYY-MM-DD") hasta la cual extraer datos (por defecto: último mes disponible).}
+\item{year}{An optional integer year. Both date arguments are overridden.}
 
-\item{year}{Numérico, año completo para el cual extraer datos (opcional). Si se especifica, sobrescribe fecha_inicio y fecha_fin.}
+\item{percentil_limite}{An optional percentile in \verb{(0, 1]}. Values above the
+station-specific sample quantile are replaced by \code{NA}. The legacy default
+of \code{0.999} is retained; \code{NULL} is recommended when pollution episodes are
+studied and no independently justified upper filter is available.}
 
-\item{percentil_limite}{Numérico, percentil para filtrar valores extremos (por defecto 0.999).}
+\item{tz}{A time zone used to interpret the source's Excel wall-clock times.
+The legacy default \code{"UTC"} retains the numeric timestamps produced by
+version 0.2.0; no conversion from Ecuadorian time was performed in that
+version. Use \code{"America/Guayaquil"} when Ecuadorian local times are intended,
+and convert the resulting instants to UTC for comparison with WRF.}
 }
 \value{
-Un data frame con las concentraciones del contaminante para todas las estaciones,
-con columnas: date, y una columna por cada estación con los valores del contaminante.
+A data frame with a \code{POSIXct} \code{date} column and one numeric column per
+station. An empty data frame is returned with an informative message if
+the remote resource is unavailable or its format cannot be processed.
+Original units, when supplied in a separate header row, are retained in
+the \code{unidades} attribute; otherwise \code{NA} is recorded. No concentration
+unit conversion is performed.
 }
 \description{
-Esta función descarga, descomprime y procesa datos ambientales de Quito
-(como PM2.5, CO, NO2, etc.) desde los datos abiertos de la Secretaría de
-Ambiente de Quito, para un contaminante o variable meteorológica y un rango de fechas.
+An official Quito archive is downloaded and observations from all reported
+stations are returned. Existing argument names and station columns are
+retained for compatibility with AirEcuador 0.2.0.
+}
+\details{
+All hours of \code{fecha_fin} are included. Negative pollutant values
+and negative values of nonnegative meteorological variables are replaced
+by \code{NA}; signed temperature observations (\code{TMP}) are retained.
 }
 \examples{
-\dontrun{
-# Extraer datos de CO para un rango de fechas
-datos <- extraer_Quito_variable(contaminante = "CO", fecha_inicio = "2024-01-01", fecha_fin = "2024-12-31")
-head(datos)
-# Extraer datos de CO para un año completo
-datos <- extraer_Quito_variable(contaminante = "CO", year = 2024)
-head(datos)
+if (interactive()) {
+  datos <- extraer_Quito_variable("CO", "2024-01-01", "2024-01-01",
+                                 percentil_limite = NULL,
+                                 tz = "America/Guayaquil")
+  head(datos)
 }
 }

@@ -1,2 +1,8 @@
 ^AirEcuador\.Rproj$
 ^\.Rproj\.user$
+^\.github$
+^cran-comments\.md$
+^cran-submission\.md$
+^dev$
+^.*\.Rcheck$
+^.*\.tar\.gz$

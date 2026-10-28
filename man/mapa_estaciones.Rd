@@ -2,21 +2,21 @@
 % Please edit documentation in R/mapa_estaciones.R
 \name{mapa_estaciones}
 \alias{mapa_estaciones}
-\title{Generar un mapa interactivo de las estaciones de monitoreo en Quito}
+\title{Display the Quito monitoring stations on an interactive map}
 \usage{
 mapa_estaciones()
 }
 \value{
-Un objeto de mapa interactivo (leaflet) con las estaciones marcadas.
+A \code{leaflet} HTML widget. Map tiles are downloaded by the browser
+when the widget is displayed.
 }
 \description{
-Esta función crea un mapa interactivo con las ubicaciones de las estaciones de monitoreo
-de calidad del aire en Quito, utilizando la librería leaflet. Las estaciones vigentes
-se muestran con marcadores verdes.
+Locations of the nine Quito stations included in AirEcuador 0.2.0 are
+displayed. Current station operation is not verified by this function.
+The optional package 'leaflet' is required for rendering.
 }
 \examples{
-\dontrun{
-# Generar el mapa de estaciones
-mapa_estaciones()
+if (requireNamespace("leaflet", quietly = TRUE)) {
+  mapa <- mapa_estaciones()
 }
 }
