@@ -1,7 +1,7 @@
 Package: AirEcuador
 Type: Package
 Title: Import Air Quality and Meteorological Data from Ecuador
-Version: 0.3.0
+Version: 0.3.0.9000
 Authors@R: person("Fidel", "Vallejo", email = "fidel.vallejo@unach.edu.ec", role = c("aut", "cre"))
 Description: Air quality and meteorological observations from Quito's
     Environment Secretariat <https://datosambiente.quito.gob.ec/> and air
@@ -10,8 +10,8 @@ Description: Air quality and meteorological observations from Quito's
     imported. Station names, missing values, date intervals and optional
     percentile filters are handled consistently. Minute observations from
     Cuenca can be aggregated to hourly means with an explicit completeness
-    requirement. Quito monitoring stations can be displayed on an interactive
-    map.
+    requirement. Reference monitoring station locations in Quito and Cuenca
+    can be displayed on interactive maps.
 License: MIT + file LICENSE
 Encoding: UTF-8
 URL: https://github.com/fvallejog/AirEcuador

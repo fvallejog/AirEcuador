@@ -9,7 +9,7 @@ extraer_Cuenca_variable(
   fecha_inicio = format(.ultimo_mes(), "\%Y-\%m-01"),
   fecha_fin = .ultimo_mes(),
   year = NULL,
-  percentil_limite = NULL,
+  percentil_limite = 0.999,
   resolucion = c("horaria", "original"),
   cobertura_minima = 0.75,
   tz = "America/Guayaquil"
@@ -24,9 +24,11 @@ provider and is not guaranteed for any particular year.}
 
 \item{year}{An optional integer year by which both dates are overridden.}
 
-\item{percentil_limite}{An optional percentile in \verb{(0, 1]}. No upper
-percentile filter is applied by default. When supplied, filtering is
-applied to the returned resolution, after aggregation.}
+\item{percentil_limite}{An optional percentile in \code{(0, 1]}, default \code{0.999}
+  (P99.9). For each station and pollutant the type-7 sample quantile is
+  calculated once over the requested interval, after physical checks and
+  any hourly aggregation, at the returned resolution. Values strictly
+  above it become \code{NA}. \code{NULL} disables only the percentile filter.}
 
 \item{resolucion}{Either \code{"horaria"} (hourly means) or \code{"original"} (the
 timestamps and resolution supplied by the provider).}
@@ -43,12 +45,16 @@ This assumption should be verified with the provider for critical uses.}
 }
 \value{
 A data frame with \code{date} and \code{UDA} columns. The source unit is
-retained in \code{attr(x, "unidades")}; no unit conversion is performed.
-For hourly results, valid-minute counts are retained in
-\code{attr(x, "cobertura")} with \code{date} and \code{UDA} columns. \code{NA} observations are
-used for missing or insufficiently covered hours. An empty data frame is
-returned with a message when the service is unavailable, a request fails,
-the response format changes or no records are found.
+  retained in \code{attr(x, "unidades")}; no unit conversion is performed.
+  For hourly results, valid-minute counts are retained in
+  \code{attr(x, "cobertura")} with \code{date} and \code{UDA} columns. \code{NA} observations are
+  used for missing or insufficiently covered hours.
+  \code{attr(x, "control_calidad")} records physical exclusions on original
+  observations (\code{etapa = "original"}) and percentile exclusions on the
+  output (\code{etapa = "salida"}); these stages must not be summed as if they
+  contained distinct observations. An empty data frame is
+  returned with a message when the service is unavailable, a request fails,
+  the response format changes or no records are found.
 }
 \description{
 Historical observations from the Universidad del Azuay (UDA) station are
@@ -59,10 +65,16 @@ service.
 }
 \details{
 Requests are divided into intervals of at most seven days.
-Only concentration records are parsed; remotely supplied JavaScript is
-never evaluated. Negative and nonfinite concentrations are replaced by
-\code{NA}. Repeated, identical observations are deduplicated. Conflicting
-observations at an identical timestamp are rejected.
+  Only concentration records are parsed; remotely supplied JavaScript is
+  never evaluated. Negative and nonfinite concentrations, and fractions
+  exceeding \code{1e6} ppm or \code{1e9} ppb when those units are reported, are replaced
+  by \code{NA} before hourly aggregation and valid-minute counting. No arbitrary
+  upper mass-concentration bound is inferred. The P99.9 screen is applied
+  to the returned resolution, once after all chunks have been combined.
+  Rows and timestamps are retained. A percentile screen is not a regulatory
+  limit or proof of measurement error. Repeated, identical observations
+  are deduplicated. Conflicting
+  observations at an identical timestamp are rejected.
 }
 \examples{
 if (interactive()) {
@@ -70,5 +82,6 @@ if (interactive()) {
   head(datos)
   attr(datos, "unidades")
   head(attr(datos, "cobertura"))
+  attr(datos, "control_calidad")
 }
 }

@@ -23,10 +23,11 @@ used when \code{fecha_fin} is omitted.}
 
 \item{year}{An optional integer year. Both date arguments are overridden.}
 
-\item{percentil_limite}{An optional percentile in \verb{(0, 1]}. Values above the
-station-specific sample quantile are replaced by \code{NA}. The legacy default
-of \code{0.999} is retained; \code{NULL} is recommended when pollution episodes are
-studied and no independently justified upper filter is available.}
+\item{percentil_limite}{An optional percentile in \code{(0, 1]}. Values above the
+  station- and variable-specific sample quantile are replaced by \code{NA}.
+  The default is \code{0.999} (P99.9), calculated after physical checks over the
+  requested interval, using R's type-7 quantile. Values equal to the
+  threshold are retained. \code{NULL} disables only the percentile filter.}
 
 \item{tz}{A time zone used to interpret the source's Excel wall-clock times.
 The legacy default \code{"UTC"} retains the numeric timestamps produced by
@@ -36,11 +37,12 @@ and convert the resulting instants to UTC for comparison with WRF.}
 }
 \value{
 A data frame with a \code{POSIXct} \code{date} column and one numeric column per
-station. An empty data frame is returned with an informative message if
-the remote resource is unavailable or its format cannot be processed.
-Original units, when supplied in a separate header row, are retained in
-the \code{unidades} attribute; otherwise \code{NA} is recorded. No concentration
-unit conversion is performed.
+  station. An empty data frame is returned with an informative message if
+  the remote resource is unavailable or its format cannot be processed.
+  Original units, when supplied in a separate header row, are retained in
+  the \code{unidades} attribute; otherwise \code{NA} is recorded. No concentration
+  unit conversion is performed. Per-station counts, physical bounds and
+  percentile thresholds are retained in \code{attr(x, "control_calidad")}.
 }
 \description{
 An official Quito archive is downloaded and observations from all reported
@@ -49,14 +51,24 @@ retained for compatibility with AirEcuador 0.2.0.
 }
 \details{
 All hours of \code{fecha_fin} are included. Negative pollutant values
-and negative values of nonnegative meteorological variables are replaced
-by \code{NA}; signed temperature observations (\code{TMP}) are retained.
+  and negative values of nonnegative meteorological variables are replaced
+  by \code{NA}; atmospheric pressure must be positive. Additional measurement
+  domain checks depend on reported units: temperature must not be below
+  absolute zero; humidity in percent must be in \code{[0, 100]}; wind direction
+  must be in \code{[0, 360]} degrees or \code{[0, 2*pi]} radians; concentrations in ppm
+  and ppb must not exceed \code{1e6} and \code{1e9}, respectively. Unknown units are
+  not guessed and no arbitrary upper mass-concentration limit is imposed.
+  Valid negative Celsius temperatures are retained. Percentile thresholds
+  are never pooled across stations or variables. Exclusions become \code{NA};
+  timestamps and rows are retained. A sample percentile is a statistical
+  screen, not a regulatory limit or proof of measurement error.
 }
 \examples{
 if (interactive()) {
   datos <- extraer_Quito_variable("CO", "2024-01-01", "2024-01-01",
-                                 percentil_limite = NULL,
+                                 percentil_limite = 0.999,
                                  tz = "America/Guayaquil")
   head(datos)
+  attr(datos, "control_calidad")
 }
 }

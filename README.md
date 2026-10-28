@@ -3,14 +3,15 @@
 Air quality observations from Quito and Cuenca, Ecuador, are imported into R.
 Meteorological observations are also supported for Quito.
 
-This development version is being prepared for its first CRAN submission.
-Availability on CRAN has not yet been established.
+This is development version 0.3.0.9000. The initial 0.3.0 CRAN upload remains
+unconfirmed and is on hold while Cuenca coverage is reviewed with the maintainer.
+This development version has not been submitted to CRAN.
 
 ## Installation
 
 ```r
 install.packages("remotes")
-remotes::install_github("fvallejog/AirEcuador")
+remotes::install_github("fvallejog/AirEcuador@feat/mapa-ciudades")
 library(AirEcuador)
 ```
 
@@ -44,12 +45,12 @@ code. The full requested historical range is not guaranteed to be available.
 ```r
 co <- extraer_Quito_variable(
   "CO", fecha_inicio = "2024-01-01", fecha_fin = "2024-01-31",
-  percentil_limite = NULL, tz = "America/Guayaquil"
+  percentil_limite = 0.999, tz = "America/Guayaquil"
 )
 
 chillos <- extraer_Quito_estacion(
   "Los Chillos", year = 2024,
-  percentil_limite = NULL, tz = "America/Guayaquil"
+  percentil_limite = 0.999, tz = "America/Guayaquil"
 )
 
 attr(co, "unidades")
@@ -91,6 +92,35 @@ minutes are required by the default threshold. Insufficiently covered and
 missing hours are returned as `NA`. No values are interpolated. Coverage is
 calculated before any optional percentile filter of the hourly means.
 
+## Station maps
+
+```r
+mapa_estaciones()                  # Quito, retained default
+mapa_estaciones(ciudad = "Quito")
+mapa_estaciones(ciudad = "Cuenca")
+```
+
+The Cuenca map retains UDA alongside the three EMOV-CAIRE sites:
+
+| Code | Displayed site | Data download through AirEcuador |
+| --- | --- | --- |
+| MUN | Centro Historico / Municipio | Pending |
+| CCA | Sector Parque Industrial / Colegio Carlos Arizaga | Pending |
+| EIE | Sector Control Sur / Escuela Ignacio Escandon | Pending |
+| UDA | Universidad del Azuay / IERSE | Implemented |
+
+The three EMOV sites use reference coordinates attributed to EMOV (2013)
+in Table I of [Abad and Mejia (2017)](https://www.researchgate.net/publication/336209902).
+Verification of the locations for 2024--2025 is pending; the coordinate
+source and date are shown in the popups. Current station operation is not
+checked. Mapping a site does not implement its data download. The existing
+`extraer_Cuenca_*()` functions query the separate UDA station. UDA's reference
+location comes from the geographic metadata of its
+[IERSE air-quality portal](https://ierse.uazuay.edu.ec/aire/); the precise
+instrument location has not been verified. Each provider is identified in
+the map popups. Green markers have a downloader implemented in AirEcuador;
+orange markers are EMOV sites whose downloader is still pending.
+
 ## Time and units
 
 Cuenca times are interpreted as Ecuadorian local time (`America/Guayaquil`)
@@ -117,13 +147,52 @@ temperature/pressure conversion is performed by the package.
 
 ## Quality filters and unavailable services
 
-Negative pollutant concentrations and nonfinite values are replaced by `NA`.
-Signed Quito temperature observations are retained. An upper percentile filter
-is **not** applied to Cuenca unless one is requested. The old Quito default
-`percentil_limite = 0.999` is retained for compatibility. For analysis of high
-pollution episodes, `percentil_limite = NULL` is recommended unless a filter
-has been independently justified. These transformations are not a substitute
-for the provider's quality assurance.
+The maintainer's filtering policy is applied to Quito and Cuenca: physical
+and measurement-domain checks first, then P99.9 separately for each station
+and variable. `percentil_limite = 0.999` is the default in all four extractors.
+The type-7 sample quantile is estimated over the requested interval at the
+returned resolution, after physical exclusions. Values strictly above the
+threshold become `NA`; values equal to it are retained. Dates and rows are
+preserved. The percentile is a chosen statistical screen, not a regulatory
+limit or proof that a high concentration is erroneous. In short intervals,
+the fraction removed can exceed 0.1% because sample quantiles are interpolated.
+
+Nonfinite and negative pollutant values are excluded. Nonnegative
+meteorological variables reject negatives, and pressure rejects zero.
+Additional checks use the reported units:
+
+| Variable | Recognized unit | Accepted measurement domain |
+| --- | --- | --- |
+| TMP | Celsius / kelvin / Fahrenheit | At or above absolute zero; valid negative Celsius/Fahrenheit values are retained |
+| HUM | Percent / fraction | 0--100 / 0--1 |
+| DIR | Degrees / radians | 0--360 / 0--2*pi |
+| Pollutant concentration | ppm / ppb | 0--1e6 / 0--1e9 |
+
+Unit-dependent bounds are not guessed when units are missing or unrecognized.
+No arbitrary upper limit is assigned to mass concentrations, rainfall, wind
+speed or radiation. These checks do not replace the provider's quality flags
+or instrument-specific validation. Celsius and kelvin interpretation follows
+the [SI temperature scale](https://www.nist.gov/pml/owm/si-units-temperature).
+
+For Cuenca, physical checks are performed on original observations before
+minute averaging, valid-minute counting and hourly averaging. The percentile
+screen is applied once to the chosen output resolution after all download
+chunks have been combined. Hourly coverage is counted before this final
+percentile screen.
+
+The applied bounds, counts and threshold are available for review:
+
+```r
+attr(co, "control_calidad")
+attr(pm25, "control_calidad")
+```
+
+Each record identifies its station, variable, unit, stage and resolution,
+with input counts, missing/non-numeric/nonfinite values, physical exclusions,
+the percentile threshold, percentile exclusions and remaining valid values.
+Cuenca reports original and output stages separately; their counts must not
+be added together. `percentil_limite = NULL` disables only the percentile
+screen and retains physical checks. No values are imputed.
 
 Network failures and changed source formats are reported through messages and
 empty results. Empty results must be checked before downstream analysis:
@@ -143,7 +212,7 @@ Separate live checks can be run explicitly by the maintainer:
 ```sh
 Rscript dev/validate-live.R
 R CMD build .
-R CMD check --as-cran AirEcuador_0.3.0.tar.gz
+R CMD check --as-cran AirEcuador_0.3.0.9000.tar.gz
 ```
 
 Checks on Linux, Windows, macOS and R-devel are configured in GitHub Actions.

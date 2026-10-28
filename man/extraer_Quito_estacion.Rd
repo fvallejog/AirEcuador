@@ -23,10 +23,11 @@ used when \code{fecha_fin} is omitted.}
 
 \item{year}{An optional integer year. Both date arguments are overridden.}
 
-\item{percentil_limite}{An optional percentile in \verb{(0, 1]}. Values above the
-station-specific sample quantile are replaced by \code{NA}. The legacy default
-of \code{0.999} is retained; \code{NULL} is recommended when pollution episodes are
-studied and no independently justified upper filter is available.}
+\item{percentil_limite}{An optional percentile in \code{(0, 1]}. Values above the
+  station- and variable-specific sample quantile are replaced by \code{NA}.
+  The default is \code{0.999} (P99.9), calculated after physical checks over the
+  requested interval, using R's type-7 quantile. Values equal to the
+  threshold are retained. \code{NULL} disables only the percentile filter.}
 
 \item{tz}{A time zone used to interpret the source's Excel wall-clock times.
 The legacy default \code{"UTC"} retains the numeric timestamps produced by
@@ -36,8 +37,10 @@ and convert the resulting instants to UTC for comparison with WRF.}
 }
 \value{
 A data frame with \code{date}, \code{estacion} and available variable columns.
-Original units are retained in the \code{unidades} attribute. An empty data
-frame is returned with a message if no observations are available.
+  Original units are retained in the \code{unidades} attribute. An empty data
+  frame is returned with a message if no observations are available.
+  \code{attr(x, "control_calidad")} contains the filtering summary for the
+  requested station and each returned variable.
 }
 \description{
 Available air quality and meteorological variables are combined by time.
@@ -47,7 +50,7 @@ retained outside the R session's temporary directory.
 \examples{
 if (interactive()) {
   datos <- extraer_Quito_estacion("Los Chillos", "2024-01-01", "2024-01-01",
-                                percentil_limite = NULL,
+                                percentil_limite = 0.999,
                                 tz = "America/Guayaquil")
   head(datos)
 }
