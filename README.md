@@ -10,7 +10,7 @@ Availability on CRAN has not yet been established.
 
 ```r
 install.packages("remotes")
-remotes::install_github("fvallejog/AirEcuador", ref = "feat/cuenca-cran")
+remotes::install_github("fvallejog/AirEcuador")
 library(AirEcuador)
 ```
 
