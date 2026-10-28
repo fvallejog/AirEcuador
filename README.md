@@ -3,14 +3,15 @@
 Air quality observations from Quito and Cuenca, Ecuador, are imported into R.
 Meteorological observations are also supported for Quito.
 
-This development version is being prepared for its first CRAN submission.
-Availability on CRAN has not yet been established.
+This is development version 0.3.0.9000. The initial 0.3.0 CRAN upload remains
+unconfirmed and is on hold while Cuenca coverage is reviewed with the maintainer.
+This development version has not been submitted to CRAN.
 
 ## Installation
 
 ```r
 install.packages("remotes")
-remotes::install_github("fvallejog/AirEcuador")
+remotes::install_github("fvallejog/AirEcuador@feat/mapa-ciudades")
 library(AirEcuador)
 ```
 
@@ -91,6 +92,30 @@ minutes are required by the default threshold. Insufficiently covered and
 missing hours are returned as `NA`. No values are interpolated. Coverage is
 calculated before any optional percentile filter of the hourly means.
 
+## Station maps
+
+```r
+mapa_estaciones()                  # Quito, retained default
+mapa_estaciones(ciudad = "Quito")
+mapa_estaciones(ciudad = "Cuenca")
+```
+
+The Cuenca map contains the three EMOV-CAIRE sites requested for review:
+
+| Code | Displayed site | Data download through AirEcuador |
+| --- | --- | --- |
+| MUN | Centro Historico / Municipio | Pending |
+| CCA | Sector Parque Industrial / Colegio Carlos Arizaga | Pending |
+| EIE | Sector Control Sur / Escuela Ignacio Escandon | Pending |
+
+These are reference locations, with coordinates attributed to EMOV (2013)
+in Table I of [Abad and Mejia (2017)](https://www.researchgate.net/publication/336209902).
+Verification of the locations for 2024--2025 is pending; the coordinate
+source and date are shown in the popups. Current station operation is not
+checked. Mapping a site does not implement its data download. The existing
+`extraer_Cuenca_*()` functions query the separate UDA station, which is not
+one of the three EMOV sites above.
+
 ## Time and units
 
 Cuenca times are interpreted as Ecuadorian local time (`America/Guayaquil`)
@@ -143,7 +168,7 @@ Separate live checks can be run explicitly by the maintainer:
 ```sh
 Rscript dev/validate-live.R
 R CMD build .
-R CMD check --as-cran AirEcuador_0.3.0.tar.gz
+R CMD check --as-cran AirEcuador_0.3.0.9000.tar.gz
 ```
 
 Checks on Linux, Windows, macOS and R-devel are configured in GitHub Actions.

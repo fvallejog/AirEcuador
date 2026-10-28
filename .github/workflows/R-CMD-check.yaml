@@ -36,15 +36,39 @@ jobs:
         with:
           r-version: ${{ matrix.config.r }}
           use-public-rspm: true
+      - uses: r-lib/actions/setup-pandoc@v2
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: |
+            any::rcmdcheck
+            any::leaflet
           needs: check
       - uses: r-lib/actions/check-r-package@v2
         with:
           args: 'c("--no-manual", "--as-cran")'
           error-on: '"warning"'
           upload-snapshots: false
+      - name: Render city maps for maintainer review
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        shell: Rscript {0}
+        run: |
+          pkgload::load_all()
+          preview_dir <- file.path(Sys.getenv("RUNNER_TEMP"), "AirEcuador-maps")
+          dir.create(preview_dir, showWarnings = FALSE)
+          for (city in c("Quito", "Cuenca")) {
+            htmlwidgets::saveWidget(
+              mapa_estaciones(city),
+              file = file.path(preview_dir, paste0("mapa-", city, ".html")),
+              selfcontained = TRUE,
+              title = paste("AirEcuador -", city)
+            )
+          }
+      - uses: actions/upload-artifact@v4
+        if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        with:
+          name: AirEcuador-city-maps
+          path: ${{ runner.temp }}/AirEcuador-maps/*.html
+          if-no-files-found: error
       - name: Validate current Quito archive
         if: matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release' && github.event_name == 'workflow_dispatch'
         run: Rscript -e 'pkgload::load_all(); source("dev/validate-quito-live.R")'

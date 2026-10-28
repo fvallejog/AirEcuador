@@ -2,21 +2,45 @@
 % Please edit documentation in R/mapa_estaciones.R
 \name{mapa_estaciones}
 \alias{mapa_estaciones}
-\title{Display the Quito monitoring stations on an interactive map}
+\title{Display monitoring station locations for a city}
 \usage{
-mapa_estaciones()
+mapa_estaciones(ciudad = "Quito")
+}
+\arguments{
+\item{ciudad}{A single city name: \code{"Quito"} (the default) or \code{"Cuenca"}.
+Case and surrounding whitespace are ignored.}
 }
 \value{
 A \code{leaflet} HTML widget. Map tiles are downloaded by the browser
 when the widget is displayed.
 }
 \description{
-Locations of the nine Quito stations included in AirEcuador 0.2.0 are
-displayed. Current station operation is not verified by this function.
+Reference locations of monitoring stations in Quito or Cuenca are displayed.
+Calling the function without arguments retains the Quito map.
 The optional package 'leaflet' is required for rendering.
+}
+\details{
+The nine Quito locations are retained from AirEcuador 0.2.0.
+Cuenca shows three EMOV-CAIRE sites: Centro Historico (MUN), Sector
+Parque Industrial (CCA) and Sector Control Sur (EIE). Their reference
+coordinates are attributed to EMOV (2013) in Table I of Abad and
+Mejia (2017); verification of their locations for 2024--2025 is pending.
+The source and coordinate date are displayed in each Cuenca popup.
+
+A mapped site does not imply a supported data download. EMOV downloads
+have not been implemented: \code{\link[=extraer_Cuenca_variable]{extraer_Cuenca_variable()}} and
+\code{\link[=extraer_Cuenca_estacion]{extraer_Cuenca_estacion()}} still query the separate UDA station.
+Current station operation is not verified by this function.
+}
+\references{
+Abad, L. and Mejia, D. (2017). Estimacion de la concentracion
+de material particulado menor a 10 micras a traves de sensores remotos
+en el area urbana de la ciudad de Cuenca, Table I.
+\url{https://www.researchgate.net/publication/336209902}.
 }
 \examples{
 if (requireNamespace("leaflet", quietly = TRUE)) {
-  mapa <- mapa_estaciones()
+  quito <- mapa_estaciones()
+  cuenca <- mapa_estaciones(ciudad = "Cuenca")
 }
 }

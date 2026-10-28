@@ -1,3 +1,14 @@
+# AirEcuador 0.3.0.9000
+
+* `mapa_estaciones(ciudad = "Quito")` retains the existing default map and
+  accepts `ciudad = "Cuenca"` for the three EMOV-CAIRE reference sites MUN,
+  CCA and EIE. Historical coordinate sources and pending 2024--2025 location
+  verification are identified in Cuenca popups. EMOV data downloads remain
+  unimplemented; the Cuenca extraction functions still query UDA.
+* The initial CRAN upload remains unconfirmed and is on hold at the
+  maintainer's request while Cuenca coverage is reviewed. This development
+  version has not been submitted to CRAN.
+
 # AirEcuador 0.3.0
 
 * Cuenca observations from the Universidad del Azuay station, published by
