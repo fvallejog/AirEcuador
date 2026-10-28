@@ -111,10 +111,18 @@
 }
 
 .descargar <- function(url, destino, query = NULL) {
+  # Quito's established request header is retained: that request was accepted
+  # from the maintainer's R session, while the workbook reader needed repair.
+  agente <- if (startsWith(url, "https://datosambiente.quito.gob.ec/")) {
+    paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
+           "AppleWebKit/537.36 (KHTML, like Gecko) ",
+           "Chrome/91.0.4472.124 Safari/537.36")
+  } else {
+    "AirEcuador (https://github.com/fvallejog/AirEcuador)"
+  }
   respuesta <- tryCatch(httr::GET(
     url, query = query, httr::write_disk(destino, overwrite = TRUE),
-    httr::timeout(120), httr::user_agent(
-      "AirEcuador (https://github.com/fvallejog/AirEcuador)")),
+    httr::timeout(120), httr::user_agent(agente)),
     error = function(e) {
       message("The remote resource could not be downloaded: ",
               conditionMessage(e))

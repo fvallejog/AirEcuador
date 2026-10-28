@@ -21,6 +21,8 @@
   row are supported. Excel date cells, ISO date strings and numeric Excel
   serials are recognised. The first observation is retained when a unit row
   is absent; unreported units are represented by NA.
+* The established Quito download user agent is retained for compatibility
+  with the request confirmed to work from the maintainer's R session.
 * Time-zone interpretation is exposed through `tz`. The Quito default of UTC
   is retained to reproduce legacy numeric timestamps. This is a wall-clock
   interpretation, not a conversion from Ecuadorian local time. Explicit

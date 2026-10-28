@@ -20,16 +20,19 @@ Validation completed on 2026-10-27:
   archive extraction, spreadsheet reading, date filtering and station output
   were verified through the exported function with the download step replaced
   by the supplied file. For 2024-01-01, 24 hourly rows and eight station columns
-  were returned. Local-file processing is verified; direct HTTP access from
-  the maintainer's R session has not been verified.
+  were returned. On 2026-10-28, the maintainer's previous installed reader
+  successfully downloaded and extracted the official archive from RStudio;
+  its date conversion then failed for the 2024 interval. The established
+  Quito user agent is retained in the corrected candidate. The maintainer's
+  exact two-day request was verified with the supplied archive: 48 hourly
+  rows and eight station columns were returned by the corrected function.
 * The same HTTP 403 was reproduced by the separate live Quito check on a
   GitHub-hosted Ubuntu runner. This failure was observed after the package
   check itself completed with Status: OK.
-* R CMD check --as-cran --no-manual completed with Status: OK on GitHub-hosted
-  Linux, Windows and macOS using current R release (4.6.1) before the official
-  archive format adjustment. These checks must be repeated for the corrected
-  candidate. The R-devel jobs were still installing dependencies when this
-  status was recorded.
+* Package checks after the official archive format adjustment completed
+  successfully on GitHub-hosted Linux, Windows, macOS and R-devel for commit
+  13bcaa312906a336b6d7c61e92ce1a3c91345776. The subsequent request-header
+  compatibility adjustment must be included in the final checked commit.
 * A development source tarball was also built locally with R 4.6.1. The local
   offline tests above were run with R 4.3.3; no local R 4.6.1 test pass is
   claimed because the older native dependency builds were incompatible.
