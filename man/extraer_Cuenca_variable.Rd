@@ -2,21 +2,25 @@
 % Please edit documentation in R/cuenca.R
 \name{extraer_Cuenca_variable}
 \alias{extraer_Cuenca_variable}
-\title{Import air pollutant observations from Cuenca}
+\title{Import observations for one variable in Cuenca}
 \usage{
 extraer_Cuenca_variable(
   contaminante = "PM2.5",
   fecha_inicio = format(.ultimo_mes(), "\%Y-\%m-01"),
   fecha_fin = .ultimo_mes(),
   year = NULL,
-  percentil_limite = NULL,
+  percentil_limite = 0.999,
   resolucion = c("horaria", "original"),
   cobertura_minima = 0.75,
-  tz = "America/Guayaquil"
+  tz = "America/Guayaquil",
+  fuente = c("UDA", "CAIRE")
 )
 }
 \arguments{
-\item{contaminante}{One of \code{CO}, \code{NO2}, \code{O3}, \code{PM2.5} or \code{SO2}.}
+\item{contaminante}{A variable code. UDA accepts \code{CO}, \code{NO2}, \code{O3},
+\code{PM2.5} and \code{SO2}. CAIRE accepts \code{CO}, \code{NO2}, \code{PM10}, \code{PM2.5} and \code{SO2},
+and the meteorological variables \code{RS} (global radiation), \code{LLU}
+(precipitation), \code{VEL} (wind speed) and \code{DIR} (wind direction).}
 
 \item{fecha_inicio, fecha_fin}{Inclusive calendar dates. The previous calendar
 month is requested by default. Data availability is determined by the
@@ -24,45 +28,63 @@ provider and is not guaranteed for any particular year.}
 
 \item{year}{An optional integer year by which both dates are overridden.}
 
-\item{percentil_limite}{An optional percentile in \verb{(0, 1]}. No upper
-percentile filter is applied by default. When supplied, filtering is
-applied to the returned resolution, after aggregation.}
+\item{percentil_limite}{An optional percentile in \verb{(0, 1]}, default \code{0.999}
+(P99.9). For each station and pollutant the type-7 sample quantile is
+calculated once over the requested interval, after physical checks and
+any hourly aggregation, at the returned resolution. Values strictly
+above it become \code{NA}. \code{NULL} disables only the percentile filter.}
 
-\item{resolucion}{Either \code{"horaria"} (hourly means) or \code{"original"} (the
-timestamps and resolution supplied by the provider).}
+\item{resolucion}{For UDA, either \code{"horaria"} (hourly means) or \code{"original"}
+(the timestamps and resolution supplied by IERSE). CAIRE returns
+provider-supplied hourly observations with either setting.}
 
 \item{cobertura_minima}{The minimum fraction of 60 distinct minutes with
 valid observations required for an hourly mean. A value of \code{0.75}
 (45 minutes) is used by default. An \code{NA} mean is returned below this
 threshold. No interpolation is performed. This argument is ignored for
-\code{resolucion = "original"}.}
+\code{resolucion = "original"} and for CAIRE.}
 
-\item{tz}{A time zone by which the displayed source times are interpreted.
-Ecuadorian local time (\code{"America/Guayaquil"}) is assumed by default.
-This assumption should be verified with the provider for critical uses.}
+\item{tz}{For UDA, the time zone used to interpret the displayed source
+timestamps. For CAIRE, the time zone used to display the returned times.
+CAIRE dates and source times use \code{"America/Guayaquil"}. Both readers default
+to this time zone.}
+
+\item{fuente}{\code{"UDA"} (the default) or \code{"CAIRE"}.}
 }
 \value{
-A data frame with \code{date} and \code{UDA} columns. The source unit is
-retained in \code{attr(x, "unidades")}; no unit conversion is performed.
-For hourly results, valid-minute counts are retained in
+A data frame with \code{date} and either \code{UDA} or \code{MUN}, \code{CCA} and \code{EIE}
+columns. CAIRE aligns observations by timestamp and uses \code{NA} for gaps
+within those timestamps. \code{attr(x, "unidades")} records the source units.
+For hourly UDA results, valid-minute counts are retained in
 \code{attr(x, "cobertura")} with \code{date} and \code{UDA} columns. \code{NA} observations are
-used for missing or insufficiently covered hours. An empty data frame is
+used for missing or insufficiently covered hours.
+\code{attr(x, "control_calidad")} records physical exclusions on original
+observations (\code{etapa = "original"}) and percentile exclusions on the
+output (\code{etapa = "salida"}); these stages must not be summed as if they
+contained distinct observations. An empty data frame is
 returned with a message when the service is unavailable, a request fails,
-the response format changes or no records are found.
+the response format changes or no records are found. CAIRE reports quality
+counts for the hourly output stage.
 }
 \description{
-Historical observations from the Universidad del Azuay (UDA) station are
-downloaded through the public service used by the IERSE website. This
-station is identified explicitly; coverage of the EMOV station network is
-not implied. PM10 and meteorological variables are not provided by this
-service.
+The IERSE service provides observations for the Universidad del Azuay
+station. The EMOV CAIRE service provides hourly observations for Centro
+Historico (MUN), Sector Parque Industrial (CCA) and Sector Control Sur (EIE).
 }
 \details{
 Requests are divided into intervals of at most seven days.
-Only concentration records are parsed; remotely supplied JavaScript is
-never evaluated. Negative and nonfinite concentrations are replaced by
-\code{NA}. Repeated, identical observations are deduplicated. Conflicting
-observations at an identical timestamp are rejected.
+The UDA reader parses concentration records from the chart service.
+The CAIRE reader parses JSON observations from the public CAIRE portal
+\url{https://caire.emov.gob.ec/datosAutomaticas} and
+\url{https://caire.emov.gob.ec/datosMete}. Station and variable coverage
+varies over time. Negative and nonfinite concentrations, and fractions
+exceeding \code{1e6} ppm or \code{1e9} ppb when those units are reported, are replaced
+by \code{NA} before hourly aggregation and valid-minute counting. No arbitrary
+upper mass-concentration bound is inferred. The P99.9 screen is applied
+to the returned resolution, once after all chunks have been combined.
+Rows and timestamps are retained. A percentile screen is not a regulatory
+limit or proof of measurement error. The reader deduplicates identical
+observations and rejects conflicting observations for a series and time.
 }
 \examples{
 if (interactive()) {
@@ -70,5 +92,9 @@ if (interactive()) {
   head(datos)
   attr(datos, "unidades")
   head(attr(datos, "cobertura"))
+  attr(datos, "control_calidad")
+  caire <- extraer_Cuenca_variable("PM2.5", "2026-11-09", "2026-11-10",
+                                  fuente = "CAIRE")
+  head(caire)
 }
 }

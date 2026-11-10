@@ -9,6 +9,12 @@ form on 2026-10-28 (upload identifier 360569). The portal reached Step 3
 (Confirmation) and reported that a confirmation email had been sent to the
 maintainer.
 
+**Submission on hold: do not confirm or resubmit.** On 2026-10-28 the
+maintainer confirmed that the email link had not been accepted and requested
+review of the Cuenca stations before proceeding. Changes to GitHub do not
+modify the already uploaded 0.3.0 archive. Development version 0.3.0.9000
+is separate and has not been submitted to CRAN.
+
 **Maintainer email confirmation is pending.** The portal states that the
 submission is not complete until the maintainer follows the link in that
 email. After confirmation the package will be passed to CRAN for review.

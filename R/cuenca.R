@@ -1,91 +1,139 @@
-#' Import air pollutant observations from Cuenca
+#' Import observations for one variable in Cuenca
 #'
-#' Historical observations from the Universidad del Azuay (UDA) station are
-#' downloaded through the public service used by the IERSE website. This
-#' station is identified explicitly; coverage of the EMOV station network is
-#' not implied. PM10 and meteorological variables are not provided by this
-#' service.
+#' The IERSE service provides observations for the Universidad del Azuay
+#' station. The EMOV CAIRE service provides hourly observations for Centro
+#' Historico (MUN), Sector Parque Industrial (CCA) and Sector Control Sur (EIE).
 #'
-#' @param contaminante One of `CO`, `NO2`, `O3`, `PM2.5` or `SO2`.
+#' @param contaminante A variable code. UDA accepts `CO`, `NO2`, `O3`,
+#'   `PM2.5` and `SO2`. CAIRE accepts `CO`, `NO2`, `PM10`, `PM2.5` and `SO2`,
+#'   and the meteorological variables `RS` (global radiation), `LLU`
+#'   (precipitation), `VEL` (wind speed) and `DIR` (wind direction).
 #' @param fecha_inicio,fecha_fin Inclusive calendar dates. The previous calendar
 #'   month is requested by default. Data availability is determined by the
 #'   provider and is not guaranteed for any particular year.
 #' @param year An optional integer year by which both dates are overridden.
-#' @param percentil_limite An optional percentile in `(0, 1]`. No upper
-#'   percentile filter is applied by default. When supplied, filtering is
-#'   applied to the returned resolution, after aggregation.
-#' @param resolucion Either `"horaria"` (hourly means) or `"original"` (the
-#'   timestamps and resolution supplied by the provider).
+#' @param percentil_limite An optional percentile in `(0, 1]`, default `0.999`
+#'   (P99.9). For each station and pollutant the type-7 sample quantile is
+#'   calculated once over the requested interval, after physical checks and
+#'   any hourly aggregation, at the returned resolution. Values strictly
+#'   above it become `NA`. `NULL` disables only the percentile filter.
+#' @param resolucion For UDA, either `"horaria"` (hourly means) or `"original"`
+#'   (the timestamps and resolution supplied by IERSE). CAIRE returns
+#'   provider-supplied hourly observations with either setting.
 #' @param cobertura_minima The minimum fraction of 60 distinct minutes with
 #'   valid observations required for an hourly mean. A value of `0.75`
 #'   (45 minutes) is used by default. An `NA` mean is returned below this
 #'   threshold. No interpolation is performed. This argument is ignored for
-#'   `resolucion = "original"`.
-#' @param tz A time zone by which the displayed source times are interpreted.
-#'   Ecuadorian local time (`"America/Guayaquil"`) is assumed by default.
-#'   This assumption should be verified with the provider for critical uses.
-#' @return A data frame with `date` and `UDA` columns. The source unit is
-#'   retained in `attr(x, "unidades")`; no unit conversion is performed.
-#'   For hourly results, valid-minute counts are retained in
+#'   `resolucion = "original"` and for CAIRE.
+#' @param tz For UDA, the time zone used to interpret the displayed source
+#'   timestamps. For CAIRE, the time zone used to display the returned times.
+#'   CAIRE dates and source times use `"America/Guayaquil"`. Both readers default
+#'   to this time zone.
+#' @param fuente `"UDA"` (the default) or `"CAIRE"`.
+#' @return A data frame with `date` and either `UDA` or `MUN`, `CCA` and `EIE`
+#'   columns. CAIRE aligns observations by timestamp and uses `NA` for gaps
+#'   within those timestamps. `attr(x, "unidades")` records the source units.
+#'   For hourly UDA results, valid-minute counts are retained in
 #'   `attr(x, "cobertura")` with `date` and `UDA` columns. `NA` observations are
-#'   used for missing or insufficiently covered hours. An empty data frame is
+#'   used for missing or insufficiently covered hours.
+#'   `attr(x, "control_calidad")` records physical exclusions on original
+#'   observations (`etapa = "original"`) and percentile exclusions on the
+#'   output (`etapa = "salida"`); these stages must not be summed as if they
+#'   contained distinct observations. An empty data frame is
 #'   returned with a message when the service is unavailable, a request fails,
-#'   the response format changes or no records are found.
+#'   the response format changes or no records are found. CAIRE reports quality
+#'   counts for the hourly output stage.
 #' @details Requests are divided into intervals of at most seven days.
-#'   Only concentration records are parsed; remotely supplied JavaScript is
-#'   never evaluated. Negative and nonfinite concentrations are replaced by
-#'   `NA`. Repeated, identical observations are deduplicated. Conflicting
-#'   observations at an identical timestamp are rejected.
+#'   The UDA reader parses concentration records from the chart service.
+#'   The CAIRE reader parses JSON observations from the public CAIRE portal
+#'   <https://caire.emov.gob.ec/datosAutomaticas> and
+#'   <https://caire.emov.gob.ec/datosMete>. Station and variable coverage
+#'   varies over time. Negative and nonfinite concentrations, and fractions
+#'   exceeding `1e6` ppm or `1e9` ppb when those units are reported, are replaced
+#'   by `NA` before hourly aggregation and valid-minute counting. No arbitrary
+#'   upper mass-concentration bound is inferred. The P99.9 screen is applied
+#'   to the returned resolution, once after all chunks have been combined.
+#'   Rows and timestamps are retained. A percentile screen is not a regulatory
+#'   limit or proof of measurement error. The reader deduplicates identical
+#'   observations and rejects conflicting observations for a series and time.
 #' @examples
 #' if (interactive()) {
 #'   datos <- extraer_Cuenca_variable("PM2.5", "2025-01-01", "2025-01-01")
 #'   head(datos)
 #'   attr(datos, "unidades")
 #'   head(attr(datos, "cobertura"))
+#'   attr(datos, "control_calidad")
+#'   caire <- extraer_Cuenca_variable("PM2.5", "2026-11-09", "2026-11-10",
+#'                                   fuente = "CAIRE")
+#'   head(caire)
 #' }
 #' @export
 extraer_Cuenca_variable <- function(
     contaminante = "PM2.5",
     fecha_inicio = format(.ultimo_mes(), "%Y-%m-01"),
-    fecha_fin = .ultimo_mes(), year = NULL, percentil_limite = NULL,
+    fecha_fin = .ultimo_mes(), year = NULL, percentil_limite = 0.999,
     resolucion = c("horaria", "original"), cobertura_minima = 0.75,
-    tz = "America/Guayaquil") {
-  .validar_variable(contaminante, .variables_cuenca)
+    tz = "America/Guayaquil", fuente = c("UDA", "CAIRE")) {
+  fuente <- match.arg(fuente)
+  variables <- if (fuente == "UDA") .variables_cuenca else .parametros_caire$variable
+  .validar_variable(contaminante, variables)
   periodo <- .periodo(fecha_inicio, fecha_fin, year, 1900L)
   .validar_percentil(percentil_limite)
   .validar_tz(tz)
   resolucion <- match.arg(resolucion)
   .validar_cobertura(cobertura_minima)
+  if (fuente == "CAIRE") {
+    return(.leer_caire(.catalogo_caire$codigo, contaminante, periodo,
+                       percentil_limite, tz))
+  }
   .leer_cuenca(contaminante, periodo, percentil_limite, resolucion,
                cobertura_minima, tz)
 }
 
-#' Import all supported pollutants for the UDA station in Cuenca
+#' Import observations for one station in Cuenca
 #'
-#' Concentrations of CO, NO2, O3, PM2.5 and SO2 are downloaded separately and
-#' combined by time. Unavailable pollutants are reported and omitted.
+#' The reader combines the supported variables by timestamp and returns
+#' columns for those with observations in the requested period.
 #'
-#' @param estacion The station name `"UDA"` or `"Universidad del Azuay"`.
+#' @param estacion `"UDA"` (the default), `"MUN"`, `"CCA"` or `"EIE"`.
+#'   The full station names are also accepted.
+#' @param tipo `"aire"` (the default) for pollutant concentrations or
+#'   `"meteo"` for CAIRE meteorological observations. UDA supports `"aire"`.
 #' @inheritParams extraer_Cuenca_variable
-#' @return A data frame with `date`, `estacion` and available pollutant
-#'   columns. Original units and hourly valid-minute counts are retained in
-#'   the `unidades` and `cobertura` attributes, respectively. An empty data frame
-#'   is returned with a message if no observations are available.
+#' @return A data frame with `date`, `estacion` and available variable columns.
+#'   The `unidades` attribute records source units. For hourly UDA data,
+#'   `cobertura` contains the valid-minute counts. `attr(x, "control_calidad")`
+#'   contains a filtering summary for each returned series, with a separate
+#'   original-observation stage for UDA. An empty result and a message
+#'   indicate unavailable observations or a failed request.
 #' @examples
 #' if (interactive()) {
 #'   datos <- extraer_Cuenca_estacion(fecha_inicio = "2025-01-01",
 #'                                   fecha_fin = "2025-01-01")
 #'   head(datos)
+#'   control_sur <- extraer_Cuenca_estacion("EIE", "2026-11-04", "2026-11-09")
+#'   head(control_sur)
 #' }
 #' @export
 extraer_Cuenca_estacion <- function(
     estacion = "UDA", fecha_inicio = format(.ultimo_mes(), "%Y-%m-01"),
-    fecha_fin = .ultimo_mes(), year = NULL, percentil_limite = NULL,
+    fecha_fin = .ultimo_mes(), year = NULL, percentil_limite = 0.999,
     resolucion = c("horaria", "original"), cobertura_minima = 0.75,
-    tz = "America/Guayaquil") {
-  if (!is.character(estacion) || length(estacion) != 1L || is.na(estacion) ||
-      !.clave(estacion) %in% c("UDA", "UNIVERSIDADDELAZUAY")) {
-    stop("Only the UDA station is supported by this Cuenca service.",
+    tz = "America/Guayaquil", tipo = c("aire", "meteo")) {
+  codigos <- c("UDA", .catalogo_caire$codigo)
+  nombres <- c("Universidad del Azuay", .catalogo_caire$nombre)
+  claves <- stats::setNames(rep(codigos, 2L), c(codigos, .clave(nombres)))
+  if (is.character(estacion) && length(estacion) == 1L) {
+    estacion <- unname(claves[.clave(estacion)])
+  } else {
+    estacion <- NA_character_
+  }
+  if (is.na(estacion)) {
+    stop("Estaci\u00f3n de Cuenca desconocida. Usa UDA, MUN, CCA o EIE.", call. = FALSE)
+  }
+  tipo <- match.arg(tipo)
+  if (estacion == "UDA" && tipo == "meteo") {
+    stop("Para consultar meteorolog\u00eda de Cuenca, usa una estaci\u00f3n CAIRE.",
          call. = FALSE)
   }
   periodo <- .periodo(fecha_inicio, fecha_fin, year, 1900L)
@@ -93,7 +141,12 @@ extraer_Cuenca_estacion <- function(
   .validar_tz(tz)
   resolucion <- match.arg(resolucion)
   .validar_cobertura(cobertura_minima)
-  partes <- coberturas <- list()
+  if (estacion != "UDA") {
+    variables <- .parametros_caire$variable[.parametros_caire$tipo == tipo]
+    return(.leer_caire(estacion, variables, periodo, percentil_limite, tz,
+                       por_estacion = TRUE))
+  }
+  partes <- coberturas <- controles <- list()
   unidades <- character()
   for (variable in .variables_cuenca) {
     datos <- .leer_cuenca(variable, periodo, percentil_limite, resolucion,
@@ -101,6 +154,7 @@ extraer_Cuenca_estacion <- function(
     if (!nrow(datos)) next
     nombre <- make.names(variable)
     unidades[nombre] <- attr(datos, "unidades")[["UDA"]]
+    controles[[variable]] <- attr(datos, "control_calidad")
     cobertura <- attr(datos, "cobertura")
     if (!is.null(cobertura)) {
       names(cobertura)[2L] <- nombre
@@ -119,6 +173,7 @@ extraer_Cuenca_estacion <- function(
   salida <- salida[c("date", "estacion", setdiff(names(salida),
                                                 c("date", "estacion")))]
   attr(salida, "unidades") <- unidades
+  attr(salida, "control_calidad") <- do.call(rbind, controles)
   attr(salida, "cobertura") <- if (length(coberturas)) {
     Reduce(combinar, coberturas)
   } else NULL
@@ -161,8 +216,10 @@ extraer_Cuenca_estacion <- function(
                            fechas_texto)) {
     stop("Invalid timestamps were received from the Cuenca service.")
   }
+  # Keep raw concentrations until units have been obtained. Physical checks
+  # are then applied before aggregation and their exclusions can be audited.
   salida <- unique(data.frame(date = fechas,
-                               valor = .filtrar_valores(valores_texto, NULL)))
+                               valor = suppressWarnings(as.numeric(valores_texto))))
   if (anyDuplicated(salida$date)) {
     stop("Conflicting Cuenca observations were received at the same time.")
   }
@@ -221,15 +278,23 @@ extraer_Cuenca_estacion <- function(
     datos <- datos[datos$date >= limites[1L] & datos$date < limites[2L], ,
                    drop = FALSE]
     if (!nrow(datos)) return(.vacio_variable(tz))
+    originales <- .depurar_valores(datos$valor, NULL, variable, unidad)
+    datos$valor <- originales$valores
     if (resolucion == "horaria") {
       salida <- .agregar_cuenca(datos, limites, cobertura, tz)
     } else {
       salida <- datos[order(datos$date), , drop = FALSE]
       names(salida)[2L] <- "UDA"
     }
-    salida$UDA <- .filtrar_valores(salida$UDA, percentil)
+    depurado <- .depurar_valores(salida$UDA, percentil, variable, unidad)
+    salida$UDA <- depurado$valores
     rownames(salida) <- NULL
     attr(salida, "unidades") <- c(UDA = unidad)
+    attr(salida, "control_calidad") <- rbind(
+      cbind(estacion = "UDA", variable = variable, etapa = "original",
+            resolucion = "original", unidad = unidad, originales$control),
+      cbind(estacion = "UDA", variable = variable, etapa = "salida",
+            resolucion = resolucion, unidad = unidad, depurado$control))
     attr(salida, "fuente") <- "IERSE - Universidad del Azuay, Cuenca"
     salida
   }, error = function(e) {

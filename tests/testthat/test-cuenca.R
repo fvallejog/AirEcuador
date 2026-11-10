@@ -6,7 +6,7 @@ test_that("concentrations are parsed without evaluating remote JavaScript", {
   texto <- cuenca_texto(c("2025-01-01 00:00:00", "2025-01-01 00:01:00"),
                          c("6.47", "-1"))
   x <- .parsear_cuenca(texto, "America/Guayaquil")
-  expect_equal(x$valor, c(6.47, NA_real_))
+  expect_equal(x$valor, c(6.47, -1))
   expect_error(.parsear_cuenca(paste0(texto, "system('bad')"), "UTC"),
                  "format was not recognised")
   expect_error(.parsear_cuenca(cuenca_texto("2025-01-01 00:00:00",
@@ -98,6 +98,8 @@ test_that("station output reports individual pollutant units and coverage", {
                      UDA = 1)
     attr(x, "unidades") <- c(UDA = if (variable == "PM2.5") "ug/m3" else "ppm")
     attr(x, "cobertura") <- data.frame(date = x$date, UDA = 60L)
+    attr(x, "control_calidad") <- data.frame(
+      estacion = "UDA", variable = variable, etapa = "salida", percentil = 0.999)
     x
   })
   x <- extraer_Cuenca_estacion(year = 2025)
@@ -106,4 +108,6 @@ test_that("station output reports individual pollutant units and coverage", {
   expect_equal(attr(x, "unidades")[["PM2.5"]], "ug/m3")
   expect_equal(attr(x, "unidades")[["O3"]], "ppm")
   expect_named(attr(x, "cobertura"), c("date", "CO", "NO2", "O3", "PM2.5", "SO2"))
+  expect_setequal(attr(x, "control_calidad")$variable,
+                  c("CO", "NO2", "O3", "PM2.5", "SO2"))
 })
