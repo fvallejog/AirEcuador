@@ -16,10 +16,9 @@
 #'   geographic metadata; the precise instrument position is not verified.
 #'   Sources and location limitations are displayed in the Cuenca popups.
 #'
-#'   A mapped site does not imply a supported data download. EMOV downloads
-#'   have not been implemented: [extraer_Cuenca_variable()] and
-#'   [extraer_Cuenca_estacion()] query the separate UDA station.
-#'   Current station operation is not verified by this function.
+#'   For EMOV observations, use [extraer_Cuenca_variable()] with
+#'   `fuente = "CAIRE"` or [extraer_Cuenca_estacion()] with the station code.
+#'   Data availability depends on the provider, variable and dates.
 #' @references Abad, L. and Mejia, D. (2017). Estimacion de la concentracion
 #'   de material particulado menor a 10 micras a traves de sensores remotos
 #'   en el area urbana de la ciudad de Cuenca, Table I.
@@ -44,8 +43,7 @@ mapa_estaciones <- function(ciudad = "Quito") {
     "Ubicaciones heredadas del paquete; operacion actual sin verificar.",
     paste0("Coordenadas de referencia: EMOV ", estaciones$anio_coordenadas,
            ".<br>Ubicacion 2024-2025 pendiente de verificar.",
-           "<br>Descarga EMOV pendiente en AirEcuador; ",
-           "las funciones Cuenca consultan UDA.",
+           "<br>Datos horarios de CAIRE seg\u00fan variable y periodo.",
            "<br><a href=\"", estaciones$fuente_coordenadas,
            "\" target=\"_blank\" rel=\"noopener noreferrer\">",
            "Fuente de coordenadas (Tabla I)</a>"))
@@ -97,9 +95,8 @@ mapa_estaciones <- function(ciudad = "Quito") {
   )
   cuenca <- data.frame(
     ciudad = "Cuenca", red = "EMOV - CAIRE",
-    codigo = c("MUN", "CCA", "EIE"),
-    nombre = c("Centro Hist\u00f3rico", "Sector Parque Industrial",
-                "Sector Control Sur"),
+    codigo = .catalogo_caire$codigo,
+    nombre = .catalogo_caire$nombre,
     longitud = c(-79.003000, -78.980024, -79.034047),
     latitud = c(-2.897001, -2.880532, -2.916303),
     anio_coordenadas = 2013L,
@@ -108,7 +105,7 @@ mapa_estaciones <- function(ciudad = "Quito") {
       "EJE_07-07_Estimacion_de_la_concentracion_de_material_particulado_",
       "menor_a_10_micras_a_traves_de_sensores_remotos_en_el_area_urbana_",
       "de_la_ciudad_de_Cuenca"),
-    descarga_implementada = FALSE,
+    descarga_implementada = TRUE,
     stringsAsFactors = FALSE)
   uda <- data.frame(
     ciudad = "Cuenca", red = "IERSE - Universidad del Azuay",

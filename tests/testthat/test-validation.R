@@ -1,5 +1,6 @@
 test_that("invalid arguments are rejected before any network access", {
-  local_mocked_bindings(.descargar = function(...) stop("NETWORK MUST NOT RUN"))
+  local_mocked_bindings(.descargar = function(...) stop("NETWORK MUST NOT RUN"),
+                        .solicitar_caire = function(...) stop("NETWORK MUST NOT RUN"))
   for (year in list(NA_real_, Inf, c(2023, 2024), 2024.5, "2024")) {
     expect_error(extraer_Quito_variable(year = year), "year must")
   }
@@ -13,8 +14,9 @@ test_that("invalid arguments are rejected before any network access", {
   expect_error(extraer_Quito_variable(contaminante = NA_character_), "variable")
   expect_error(extraer_Quito_variable(tz = "invalid"), "time-zone")
   expect_error(extraer_Quito_estacion("unknown"), "Unknown Quito")
-  expect_error(extraer_Cuenca_estacion("MUN"), "Only the UDA")
+  expect_error(extraer_Cuenca_estacion("unknown"), "UDA, MUN, CCA")
   expect_error(extraer_Cuenca_variable("PM10"), "variable")
+  expect_error(extraer_Cuenca_variable("O3", fuente = "CAIRE"), "variable")
   expect_error(extraer_Cuenca_variable(cobertura_minima = NA_real_), "cobertura")
 })
 

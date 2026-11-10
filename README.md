@@ -1,11 +1,10 @@
 # AirEcuador
 
-Air quality observations from Quito and Cuenca, Ecuador, are imported into R.
-Meteorological observations are also supported for Quito.
+AirEcuador imports air quality and meteorological observations from Quito
+and Cuenca, Ecuador, into R.
 
-This is development version 0.3.0.9000. The initial 0.3.0 CRAN upload remains
-unconfirmed and is on hold while Cuenca coverage is reviewed with the maintainer.
-This development version has not been submitted to CRAN.
+This is development version 0.3.0.9001. The initial 0.3.0 CRAN upload is
+awaiting maintainer confirmation while the updated Cuenca reader is tested.
 
 ## Installation
 
@@ -27,13 +26,11 @@ been installed.
 | --- | --- | --- | --- |
 | Quito | [Secretaria de Ambiente](https://datosambiente.quito.gob.ec/); stations reported in each archive | CO, NO2, O3, PM10, PM2.5, SO2, LLU, DIR, HUM, IUV, PRE, RS, TMP, VEL | Original hourly observations |
 | Cuenca | [IERSE, Universidad del Azuay](https://ierse.uazuay.edu.ec/aire/); UDA station | CO, NO2, O3, PM2.5, SO2 | Original timestamps or hourly means |
+| Cuenca | [EMOV CAIRE](https://caire.emov.gob.ec/datosAutomaticas), MUN, CCA and EIE stations | CO, NO2, PM10, PM2.5, SO2 | Provider-supplied hourly observations |
+| Cuenca | [EMOV CAIRE meteorology](https://caire.emov.gob.ec/datosMete) | RS, LLU, VEL, DIR | Provider-supplied hourly observations |
 
-The Cuenca IERSE service is linked from the
-[municipal air-quality catalogue](https://cuencaendatos.cuenca.gob.ec/dataset/calidad-del-aire).
-Its displayed station is Universidad del Azuay. Coverage of the EMOV network
-is not claimed by these functions; the CAIRE-EMOV portal is a separate service.
-PM10 and meteorological records are not exposed by the UDA service.
-Ambato is not included.
+The municipal air-quality catalogue links to the IERSE service for
+Universidad del Azuay. [Municipal catalogue](https://cuencaendatos.cuenca.gob.ec/dataset/calidad-del-aire).
 
 Observations are retrieved on request. No historical monitoring database is
 redistributed with the package. Data rights, quality control and revisions
@@ -60,7 +57,7 @@ Original argument names and output column names are retained. All hours of the
 last requested date are included. Files are downloaded and extracted only to
 the session's temporary directory and are removed after processing.
 
-## Cuenca: UDA station
+## Cuenca IERSE station
 
 ```r
 pm25 <- extraer_Cuenca_variable(
@@ -92,6 +89,34 @@ minutes are required by the default threshold. Insufficiently covered and
 missing hours are returned as `NA`. No values are interpolated. Coverage is
 calculated before any optional percentile filter of the hourly means.
 
+## Cuenca EMOV stations
+
+```r
+pm25_caire <- extraer_Cuenca_variable(
+  "PM2.5", "2026-11-09", "2026-11-10", fuente = "CAIRE"
+)
+head(pm25_caire)  # date, MUN, CCA, EIE
+
+control_sur <- extraer_Cuenca_estacion("EIE", "2026-11-04", "2026-11-09")
+attr(control_sur, "unidades")
+attr(control_sur, "control_calidad")
+
+met_centro <- extraer_Cuenca_estacion("MUN", "2026-11-09", "2026-11-10",
+                                     tipo = "meteo")
+attr(met_centro, "unidades")
+```
+
+CAIRE supplies hourly observations. The reader aligns stations at the
+returned timestamps, fills gaps with `NA`, and reports source units.
+The station reader includes the variables returned for that station and period.
+During a November 2026 validation, the portal returned PM2.5 for MUN and
+CCA and returned CO and SO2 for EIE.
+
+The meteorology reader uses `RS` for global radiation, `LLU` for precipitation,
+`VEL` for wind speed and `DIR` for wind direction. The CAIRE portal capture
+identified these parameters for MUN. The provider determines the coverage
+for each station and date.
+
 ## Station maps
 
 ```r
@@ -104,28 +129,24 @@ The Cuenca map retains UDA alongside the three EMOV-CAIRE sites:
 
 | Code | Displayed site | Data download through AirEcuador |
 | --- | --- | --- |
-| MUN | Centro Historico / Municipio | Pending |
-| CCA | Sector Parque Industrial / Colegio Carlos Arizaga | Pending |
-| EIE | Sector Control Sur / Escuela Ignacio Escandon | Pending |
-| UDA | Universidad del Azuay / IERSE | Implemented |
+| MUN | Centro Historico / Municipio | CAIRE |
+| CCA | Sector Parque Industrial / Colegio Carlos Arizaga | CAIRE |
+| EIE | Sector Control Sur / Escuela Ignacio Escandon | CAIRE |
+| UDA | Universidad del Azuay / IERSE | IERSE |
 
 The three EMOV sites use reference coordinates attributed to EMOV (2013)
 in Table I of [Abad and Mejia (2017)](https://www.researchgate.net/publication/336209902).
 Verification of the locations for 2024--2025 is pending; the coordinate
-source and date are shown in the popups. Current station operation is not
-checked. Mapping a site does not implement its data download. The existing
-`extraer_Cuenca_*()` functions query the separate UDA station. UDA's reference
-location comes from the geographic metadata of its
-[IERSE air-quality portal](https://ierse.uazuay.edu.ec/aire/); the precise
-instrument location has not been verified. Each provider is identified in
-the map popups. Green markers have a downloader implemented in AirEcuador;
-orange markers are EMOV sites whose downloader is still pending.
+source and date appear in the popups. UDA's reference location comes from the
+geographic metadata of its portal. The map popups identify each provider.
+[IERSE air-quality portal](https://ierse.uazuay.edu.ec/aire/).
 
 ## Time and units
 
-Cuenca times are interpreted as Ecuadorian local time (`America/Guayaquil`)
-by default. This interpretation of the displayed times is an explicit
-assumption and should be confirmed with the provider for critical uses.
+The UDA reader interprets the displayed times as Ecuadorian local time
+(`America/Guayaquil`) by default. The CAIRE reader uses Cuenca local time
+for request dates and source timestamps. Its `tz` argument controls how the
+returned timestamps are displayed.
 
 For compatibility, the old Quito default `tz = "UTC"` is retained. In version
 0.2.0, Excel wall-clock values were labelled as UTC without conversion from
@@ -174,11 +195,10 @@ speed or radiation. These checks do not replace the provider's quality flags
 or instrument-specific validation. Celsius and kelvin interpretation follows
 the [SI temperature scale](https://www.nist.gov/pml/owm/si-units-temperature).
 
-For Cuenca, physical checks are performed on original observations before
-minute averaging, valid-minute counting and hourly averaging. The percentile
-screen is applied once to the chosen output resolution after all download
-chunks have been combined. Hourly coverage is counted before this final
-percentile screen.
+For UDA, the reader checks original observations before calculating minute
+and hourly averages and counting valid minutes. For CAIRE, the reader
+checks the provider's hourly observations. Both readers calculate one
+percentile threshold for each series after combining all chunks.
 
 The applied bounds, counts and threshold are available for review:
 
@@ -190,9 +210,9 @@ attr(pm25, "control_calidad")
 Each record identifies its station, variable, unit, stage and resolution,
 with input counts, missing/non-numeric/nonfinite values, physical exclusions,
 the percentile threshold, percentile exclusions and remaining valid values.
-Cuenca reports original and output stages separately; their counts must not
-be added together. `percentil_limite = NULL` disables only the percentile
-screen and retains physical checks. No values are imputed.
+UDA reports original and output stages separately. CAIRE reports the hourly
+output stage. `percentil_limite = NULL` disables the percentile screen while
+retaining physical checks.
 
 Network failures and changed source formats are reported through messages and
 empty results. Empty results must be checked before downstream analysis:
@@ -212,7 +232,7 @@ Separate live checks can be run explicitly by the maintainer:
 ```sh
 Rscript dev/validate-live.R
 R CMD build .
-R CMD check --as-cran AirEcuador_0.3.0.9000.tar.gz
+R CMD check --as-cran AirEcuador_0.3.0.9001.tar.gz
 ```
 
 Checks on Linux, Windows, macOS and R-devel are configured in GitHub Actions.

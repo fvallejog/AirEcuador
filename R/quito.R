@@ -1,3 +1,15 @@
+.con_archivo_quito <- function(archivo, operacion, ...) {
+  firma_rar <- as.raw(c(0x52, 0x61, 0x72, 0x21, 0x1a, 0x07))
+  if (!identical(readBin(archivo, "raw", 6L), firma_rar)) {
+    return(operacion(archivo, ...))
+  }
+  # A seekable reader can identify the ZIP inside a stored XLSX member
+  # instead of its outer RAR. A stream keeps extraction on the RAR.
+  conexion <- gzcon(file(archivo, "rb"), allowNonCompressed = TRUE)
+  on.exit(try(close(conexion), silent = TRUE), add = TRUE)
+  operacion(conexion, ...)
+}
+
 .leer_quito <- function(variable, periodo, percentil, tz) {
   carpeta <- tempfile("AirEcuador-")
   dir.create(carpeta)
@@ -6,7 +18,7 @@
   url <- paste0("https://datosambiente.quito.gob.ec/datos/", variable, ".rar")
   if (!.descargar(url, comprimido)) return(.vacio_variable(tz))
   tryCatch({
-    indice <- archive::archive(comprimido)
+    indice <- .con_archivo_quito(comprimido, archive::archive)
     rutas <- gsub("\\\\", "/", indice$path)
     if (any(grepl("^/|^[A-Za-z]:|(^|/)\\.\\.(/|$)", rutas))) {
       stop("Unsafe archive paths were detected.")
@@ -16,9 +28,19 @@
                               toupper(paste0(variable, c(".xlsx", ".xls")))]
     if (length(preferidos) == 1L) candidatos <- preferidos
     if (length(candidatos) != 1L) {
-      stop("A unique spreadsheet could not be identified in the archive.")
+      entradas <- if (length(candidatos)) candidatos else indice$path
+      detalle <- if (length(entradas)) {
+        paste(encodeString(utils::head(entradas, 10L), quote = '"'),
+              collapse = ", ")
+      } else {
+        "(empty archive)"
+      }
+      if (length(entradas) > 10L) detalle <- paste0(detalle, ", ...")
+      stop("Expected one Excel workbook, found ", length(candidatos),
+           ". Archive entries: ", detalle, call. = FALSE)
     }
-    archive::archive_extract(comprimido, dir = carpeta, files = candidatos)
+    .con_archivo_quito(comprimido, archive::archive_extract,
+                       dir = carpeta, files = candidatos)
     archivo <- file.path(carpeta, candidatos)
     crudos <- suppressMessages(readxl::read_excel(
       archivo, sheet = 1, col_names = FALSE, col_types = "text",

@@ -16,7 +16,7 @@ test_that("Cuenca retains UDA alongside the three separately identified EMOV sit
   uda <- cuenca[cuenca$codigo == "UDA", ]
   expect_true(all(emov$red == "EMOV - CAIRE"))
   expect_true(all(emov$anio_coordenadas == 2013L))
-  expect_true(all(!emov$descarga_implementada))
+  expect_true(all(emov$descarga_implementada))
   expect_match(uda$red, "IERSE")
   expect_true(uda$descarga_implementada)
   expect_equal(uda$fuente_coordenadas, "https://ierse.uazuay.edu.ec/aire/")

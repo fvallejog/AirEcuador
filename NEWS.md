@@ -1,3 +1,16 @@
+# AirEcuador 0.3.0.9001
+
+* `extraer_Cuenca_variable(fuente = "CAIRE")` retrieves hourly observations
+  from Centro Historico (MUN), Sector Parque Industrial (CCA) and Sector
+  Control Sur (EIE). `extraer_Cuenca_estacion()` also accepts these station
+  codes. Data availability varies by station, variable and dates.
+* CAIRE meteorological queries support radiation, precipitation and wind.
+  Use `tipo = "meteo"` to retrieve them for a CAIRE station.
+* Quito downloads allow up to ten minutes per transfer and retry once after
+  a transport error. RAR streams preserve the outer archive when an XLSX
+  workbook is stored without compression. Workbook selection errors report
+  the archive entries.
+
 # AirEcuador 0.3.0.9000
 
 * All four extractors apply `percentil_limite = 0.999` by default, independently

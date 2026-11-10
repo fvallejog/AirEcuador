@@ -2,7 +2,7 @@
 % Please edit documentation in R/cuenca.R
 \name{extraer_Cuenca_estacion}
 \alias{extraer_Cuenca_estacion}
-\title{Import all supported pollutants for the UDA station in Cuenca}
+\title{Import observations for one station in Cuenca}
 \usage{
 extraer_Cuenca_estacion(
   estacion = "UDA",
@@ -12,11 +12,13 @@ extraer_Cuenca_estacion(
   percentil_limite = 0.999,
   resolucion = c("horaria", "original"),
   cobertura_minima = 0.75,
-  tz = "America/Guayaquil"
+  tz = "America/Guayaquil",
+  tipo = c("aire", "meteo")
 )
 }
 \arguments{
-\item{estacion}{The station name \code{"UDA"} or \code{"Universidad del Azuay"}.}
+\item{estacion}{\code{"UDA"} (the default), \code{"MUN"}, \code{"CCA"} or \code{"EIE"}.
+The full station names are also accepted.}
 
 \item{fecha_inicio, fecha_fin}{Inclusive calendar dates. The previous calendar
 month is requested by default. Data availability is determined by the
@@ -24,41 +26,48 @@ provider and is not guaranteed for any particular year.}
 
 \item{year}{An optional integer year by which both dates are overridden.}
 
-\item{percentil_limite}{An optional percentile in \code{(0, 1]}, default \code{0.999}
-  (P99.9). For each station and pollutant the type-7 sample quantile is
-  calculated once over the requested interval, after physical checks and
-  any hourly aggregation, at the returned resolution. Values strictly
-  above it become \code{NA}. \code{NULL} disables only the percentile filter.}
+\item{percentil_limite}{An optional percentile in \verb{(0, 1]}, default \code{0.999}
+(P99.9). For each station and pollutant the type-7 sample quantile is
+calculated once over the requested interval, after physical checks and
+any hourly aggregation, at the returned resolution. Values strictly
+above it become \code{NA}. \code{NULL} disables only the percentile filter.}
 
-\item{resolucion}{Either \code{"horaria"} (hourly means) or \code{"original"} (the
-timestamps and resolution supplied by the provider).}
+\item{resolucion}{For UDA, either \code{"horaria"} (hourly means) or \code{"original"}
+(the timestamps and resolution supplied by IERSE). CAIRE returns
+provider-supplied hourly observations with either setting.}
 
 \item{cobertura_minima}{The minimum fraction of 60 distinct minutes with
 valid observations required for an hourly mean. A value of \code{0.75}
 (45 minutes) is used by default. An \code{NA} mean is returned below this
 threshold. No interpolation is performed. This argument is ignored for
-\code{resolucion = "original"}.}
+\code{resolucion = "original"} and for CAIRE.}
 
-\item{tz}{A time zone by which the displayed source times are interpreted.
-Ecuadorian local time (\code{"America/Guayaquil"}) is assumed by default.
-This assumption should be verified with the provider for critical uses.}
+\item{tz}{For UDA, the time zone used to interpret the displayed source
+timestamps. For CAIRE, the time zone used to display the returned times.
+CAIRE dates and source times use \code{"America/Guayaquil"}. Both readers default
+to this time zone.}
+
+\item{tipo}{\code{"aire"} (the default) for pollutant concentrations or
+\code{"meteo"} for CAIRE meteorological observations. UDA supports \code{"aire"}.}
 }
 \value{
-A data frame with \code{date}, \code{estacion} and available pollutant
-  columns. Original units and hourly valid-minute counts are retained in
-  the \code{unidades} and \code{cobertura} attributes, respectively. An empty data frame
-  is returned with a message if no observations are available.
-  \code{attr(x, "control_calidad")} combines the filtering summaries for each
-  returned pollutant, with separate original-observation and output stages.
+A data frame with \code{date}, \code{estacion} and available variable columns.
+The \code{unidades} attribute records source units. For hourly UDA data,
+\code{cobertura} contains the valid-minute counts. \code{attr(x, "control_calidad")}
+contains a filtering summary for each returned series, with a separate
+original-observation stage for UDA. An empty result and a message
+indicate unavailable observations or a failed request.
 }
 \description{
-Concentrations of CO, NO2, O3, PM2.5 and SO2 are downloaded separately and
-combined by time. Unavailable pollutants are reported and omitted.
+The reader combines the supported variables by timestamp and returns
+columns for those with observations in the requested period.
 }
 \examples{
 if (interactive()) {
   datos <- extraer_Cuenca_estacion(fecha_inicio = "2025-01-01",
                                   fecha_fin = "2025-01-01")
   head(datos)
+  control_sur <- extraer_Cuenca_estacion("EIE", "2026-11-04", "2026-11-09")
+  head(control_sur)
 }
 }
